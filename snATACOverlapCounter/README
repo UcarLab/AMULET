@@ -1,0 +1,5 @@
+BUILDING FROM SOURCE
+
+To build this jar file from source, the samtools htsjdk library (https://github.com/samtools/htsjdk)
+must be compiled and added to its build path. If using the shell script, move the jar file to the
+same directory.
