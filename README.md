@@ -24,7 +24,9 @@ The shell file can be run from there. Java is portable and the jar should not ne
 # Running ATAC-DoubletDetector #
 Running ATAC-DoubletDetector consists of two parts: 1) Identifying all loci with >2 uniquely aligning reads for each cell, and 2) detecting doublets cells that have more loci with >2 reads than expected. The bash shell script combines both of these steps, but they can be run independently as well. The latter (doublet detection) may be useful for running doublet detection using q-values different from the default.
 
-For ease of use, executing the ATAC-DoubletDetector.jar will provide a graphical user interface (GUI) for selecting files and modifying optional parameters.
+For ease of use, executing the ATAC-DoubletDetector.jar will provide a graphical user interface (GUI) for selecting files and modifying optional parameters. Execute the jar file by double clicking it or using:
+
+`java -jar ATAC-DoubletDetector.jar`
 
 ## Bash shell script ##
 
