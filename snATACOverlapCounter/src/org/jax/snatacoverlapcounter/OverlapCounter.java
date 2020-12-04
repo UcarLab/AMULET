@@ -123,7 +123,7 @@ public class OverlapCounter {
 			_iscellidx = Integer.parseInt(iscellidx);
 		}
 		catch(NumberFormatException e) {
-			System.out.println("Please use integer values for index locaitons.");
+			System.out.println("Please use integer values for index locations.");
 		}
 	}
 	

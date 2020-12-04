@@ -14,7 +14,7 @@ while [[ "$#" -gt 0 ]]; do
         --cellidx) CELLIDX=$2; shift 2 ;;
         --iscellidx) ISCELLIDX=$2; shift 2 ;;
         --*) echo "Unknown argument: $1"; exit 1 ;;
-        *)  ARGUMENTS+=($1); shift ;;
+        *)  ARGUMENTS+=("$1"); shift ;;
     esac
 done
 

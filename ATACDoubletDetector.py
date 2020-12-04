@@ -100,8 +100,8 @@ def getFilteredOverlaps(data, simplerepeats):
     sorted_repeats = po.getChrStartSorted(simplerepeats)
     for curoverlap in data:
         curchr = curoverlap[0]
-        starts = np.array(curoverlap[-2].split(",")[:-1],dtype=int)
-        ends = np.array(curoverlap[-1].split(",")[:-1],dtype=int)
+        starts = np.array(str(curoverlap[-2]).split(",")[:-1],dtype=int)
+        ends = np.array(str(curoverlap[-1]).split(",")[:-1],dtype=int)
 
         observedloci = dict()
 
