@@ -1,6 +1,8 @@
 # ATAC-DoubletDetector #
 A count based method for detecting doublets from single nucleus ATAC-seq (snATAC-seq) data.
 
+**Preprint:** <https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1>
+
 # System Requirements #
 Java SE 8 (build 231) or higher.
 
