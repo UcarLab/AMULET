@@ -3,6 +3,8 @@ A count based method for detecting doublets from single nucleus ATAC-seq (snATAC
 
 **Preprint:** <https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1>
 
+Note: The jar files can be found in the releases: https://github.com/UcarLab/ATAC-DoubletDetector/releases
+
 # System Requirements #
 Java SE 8 (build 231) or higher.
 
