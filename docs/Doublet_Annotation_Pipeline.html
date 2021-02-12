@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+<meta name="date" content="2021-02-10" />
+
+<title>Doublet Annotation Pipeline</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">ATAC-DoubletDetector</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Vignettes
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="ATAC-DoubletDetector.html">Doublet Detection Vignette</a>
+    </li>
+    <li>
+      <a href="Doublet_Annotation_Pipeline.html">Doublet Annotation Vignette</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://www.ucarlab.com/">Ucar Lab</a>
+</li>
+<li>
+  <a href="https://github.com/UcarLab/ATAC-DoubletDetector">
+    <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Doublet Annotation Pipeline</h1>
+<h4 class="date">2021-02-10</h4>
+
+</div>
+
+
+<p><link rel="stylesheet" href="styles.css" type="text/css"> <link rel="stylesheet" href="academicicons/css/academicons.min.css"/></p>
+<p>First required packages for the pipeline are loaded in.</p>
+<pre class="r"><code>library(Seurat)
+library(Signac)
+library(dplyr)
+library(tidyr)
+library(textclean)
+library(ggplot2)
+library(MASS)
+library(stringr)
+library(mclust)</code></pre>
+<p>The functions required for the pipeline are added.</p>
+<pre class="r"><code>source(&quot;R/getMarkerPeak_method.R&quot;)
+source(&quot;R/annotateDoublets_method.R&quot;)</code></pre>
+<p>Ids of the doublet cells are read in and have the following format</p>
+<pre class="r"><code>doublets &lt;- read.table(&quot;data/example_doublets_pbmc1.txt&quot;) %&gt;% t() %&gt;% as.vector()
+
+head(doublets)</code></pre>
+<pre><code>## [1] &quot;_cell_1000&quot; &quot;_cell_1003&quot; &quot;_cell_1013&quot; &quot;_cell_1036&quot; &quot;_cell_1038&quot;
+## [6] &quot;_cell_1044&quot;</code></pre>
+<p>The Seurat object processed by the <a href="https://satijalab.org/signac/articles/pbmc_vignette.html">Signac Pipeline</a> is loaded.</p>
+<pre class="r"><code>pbmc.atac &lt;- readRDS(file = &quot;data/example_seurat_pbmc1.Rds&quot;)
+
+pbmc.atac</code></pre>
+<pre><code>## An object of class Seurat 
+## 174800 features across 6143 samples within 1 assay 
+## Active assay: ATAC (174800 features, 174800 variable features)
+##  2 dimensional reductions calculated: svd, umap</code></pre>
+<p>Cells in the Seurat object must have the same format as the doublets ids.</p>
+<pre class="r"><code>head(colnames(pbmc.atac))</code></pre>
+<pre><code>## [1] &quot;_cell_0&quot;    &quot;_cell_1&quot;    &quot;_cell_10&quot;   &quot;_cell_100&quot;  &quot;_cell_1000&quot;
+## [6] &quot;_cell_1001&quot;</code></pre>
+<p>The peaks have the following formatting</p>
+<pre class="r"><code>head(row.names(pbmc.atac))</code></pre>
+<pre><code>## [1] &quot;chr1:9860-10360&quot;  &quot;chr1:11019-11519&quot; &quot;chr1:21019-21519&quot; &quot;chr1:21522-22022&quot;
+## [5] &quot;chr1:29069-29569&quot; &quot;chr1:55902-56402&quot;</code></pre>
+<p>The desired grouping is chosen for annotation and set as the identifier of the Seurat object.</p>
+<pre class="r"><code>Idents(pbmc.atac) &lt;- &quot;grouped_clusters&quot;
+
+DimPlot(pbmc.atac, pt.size = 1, label = T, repel = T)</code></pre>
+<p><img src="Doublet_Annotation_Pipeline_files/figure-html/fig1-1.png" width="480" /></p>
+<p>The pipeline works best with 200 cells per group for annotation but can be set as desired.</p>
+<pre class="r"><code>CellsPerGroup(pbmc.atac)</code></pre>
+<pre><code>##    0    1    4    5    2   13   15 &lt;NA&gt; 
+## 1518 1966  430  419 1623  135   52    0</code></pre>
+<p>100 marker peaks are found for the clusters 0, 1, 2, 4 and 5 as they have the required number of cells. A 2 column dataframe is returned, with one column containing the id of the peak and the other the cluster that peak belong to. This is not a required step and the users can create their own personal marker peaks using the <a href="https://satijalab.org/seurat/v3.2/de_vignette.html">FindAllMarkers</a> metod of Seurat. Be careful to have an uniform number of peaks for each group, we chose 100. The naming format in the column must follow “Cluster_<ident>”.</p>
+<pre class="r"><code>marker_peaks &lt;- getMarkerPeaks(pbmc.atac, doublets = doublets, n_peaks = 100, min_cells = 200)
+
+head(marker_peaks)</code></pre>
+<pre><code>##                          peaks   cluster
+## 1591   chr17:74357149-74357649 Cluster_0
+## 724  chr14:103346993-103347493 Cluster_0
+## 1242   chr16:14950936-14951436 Cluster_0
+## 949    chr15:83438614-83439114 Cluster_0
+## 1780   chr17:78158088-78158588 Cluster_0
+## 2199   chr19:47230207-47230707 Cluster_0</code></pre>
+<p>The read count distributions of the doublet cells on the marker peaks are found. Using this information, their types(homotypic/heterotypic) and origin clusters are found. A data frame containing the read count distributions on the clusters 0, 1, 2, 4 and 5 are also reported.</p>
+<pre class="r"><code>doublet_annotations &lt;- annotateDoublets(obj = pbmc.atac, marker_peaks = marker_peaks, doublets = doublets)
+
+head(doublet_annotations)</code></pre>
+<pre><code>##               cell_id  Cluster_0  Cluster_1   Cluster_2  Cluster_4   Cluster_5
+## _cell_1000 _cell_1000 0.02744201 0.75302189 0.005880431 0.21169552 0.001960144
+## _cell_1003 _cell_1003 0.14146341 0.04756098 0.001829268 0.80731707 0.001829268
+## _cell_1013 _cell_1013 0.05113135 0.85307082 0.001763150 0.09050837 0.003526300
+## _cell_1036 _cell_1036 0.09244792 0.09843750 0.711979167 0.09088542 0.006250000
+## _cell_1038 _cell_1038 0.70287316 0.16281243 0.004204625 0.12870825 0.001401542
+## _cell_1044 _cell_1044 0.08424008 0.01263601 0.863109863 0.03159003 0.008424008
+##            doublet      d.type        d.annotation
+## _cell_1000 doublet   homotypic           Cluster_1
+## _cell_1003 doublet   homotypic           Cluster_4
+## _cell_1013 doublet   homotypic           Cluster_1
+## _cell_1036 doublet heterotypic Cluster_1.Cluster_2
+## _cell_1038 doublet heterotypic Cluster_0.Cluster_1
+## _cell_1044 doublet   homotypic           Cluster_2</code></pre>
+<p>This data frame can be added to your Seurat object as meta data and the cells not reported are the singlets.</p>
+<pre class="r"><code>pbmc.atac &lt;- AddMetaData(pbmc.atac, doublet_annotations[,c(&quot;doublet&quot;, &quot;d.type&quot;, &quot;d.annotation&quot;), drop = FALSE])
+
+pbmc.atac@meta.data[is.na(pbmc.atac@meta.data$d.type), &quot;d.type&quot;] &lt;- &quot;singlet&quot;
+pbmc.atac@meta.data[is.na(pbmc.atac@meta.data$doublet), &quot;doublet&quot;] &lt;- &quot;singlet&quot;
+pbmc.atac@meta.data[is.na(pbmc.atac@meta.data$d.annotation), &quot;d.annotation&quot;] &lt;- &quot;singlet&quot;</code></pre>
+<p>Just the doublets identified by the count based doublet detection part of ATAC-DoubletDetector.</p>
+<pre class="r"><code>DimPlot(pbmc.atac, group.by = &quot;doublet&quot;, pt.size = 1, 
+        cols = c(&quot;singlet&quot; = &quot;grey&quot;, &quot;doublet&quot; = &quot;purple&quot;), 
+        order = c(&quot;doublet&quot;, &quot;singlet&quot;))</code></pre>
+<p><img src="Doublet_Annotation_Pipeline_files/figure-html/fig2-1.png" width="480" /></p>
+<p>The types of the same doublets found by the Doublet Annotation Pipeline.</p>
+<pre class="r"><code>DimPlot(pbmc.atac, group.by = &quot;d.type&quot;, pt.size = 1, 
+        cols = c(&quot;singlet&quot; = &quot;grey&quot;, &quot;homotypic&quot; = &quot;red&quot;, &quot;heterotypic&quot; = &quot;blue&quot;), 
+        order = c(&quot;heterotypic&quot;, &quot;homotypic&quot;, &quot;singlet&quot;))</code></pre>
+<p><img src="Doublet_Annotation_Pipeline_files/figure-html/fig3-1.png" width="480" /></p>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

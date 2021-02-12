@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>ATAC-DoubletDetector</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">ATAC-DoubletDetector</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Vignettes
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="ATAC-DoubletDetector.html">Doublet Detection Vignette</a>
+    </li>
+    <li>
+      <a href="Doublet_Annotation_Pipeline.html">Doublet Annotation Vignette</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://www.ucarlab.com/">Ucar Lab</a>
+</li>
+<li>
+  <a href="https://github.com/UcarLab/ATAC-DoubletDetector">
+    <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+
+</div>
+
+
+<p><link rel="stylesheet" href="styles.css" type="text/css"> <link rel="stylesheet" href="academicicons/css/academicons.min.css"/></p>
+<div id="atac-doubletdetector" class="section level1">
+<h1>ATAC-DoubletDetector</h1>
+<p>A count based method for detecting doublets from single nucleus ATAC-seq (snATAC-seq) data.</p>
+<p><strong>Preprint:</strong> <a href="https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1" class="uri">https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1</a> <br /> <strong>Source Code:</strong> <a href="https://github.com/UcarLab/ATAC-DoubletDetector" class="uri">https://github.com/UcarLab/ATAC-DoubletDetector</a></p>
+<p>Note: The jar files can be found in the releases: <a href="https://github.com/UcarLab/ATAC-DoubletDetector/releases" class="uri">https://github.com/UcarLab/ATAC-DoubletDetector/releases</a></p>
+</div>
+<div id="vignettes" class="section level1">
+<h1>Vignettes</h1>
+<div class="list">
+<div class="row">
+<div class="col-sm-4">
+<a class="thumbnail" title="Doublet Detection" href="ATAC-DoubletDetector.html">
+<img src="ATAC-DoubletDetector_files/figure-html/unnamed-chunk-17-1.png"/>
+<div class="caption">Doublet Detection</div>
+</a>
+</div>
+<div class="col-sm-4">
+<a class="thumbnail" title="Doublet Annotation" href="Doublet_Annotation_Pipeline.html">
+<img src="Doublet_Annotation_Pipeline_files/figure-html/fig3-1.png"/>
+<div class="caption">Doublet Annotation</div>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div id="system-requirements" class="section level1">
+<h1>System Requirements</h1>
+<p>Java SE 8 (build 231) or higher.</p>
+<p>Python 3 with the following libraries: - numpy - pandas - scipy - statsmodels</p>
+<p><code>pip3 install numpy pandas scipy statsmodels</code></p>
+</div>
+<div id="installation" class="section level1">
+<h1>Installation</h1>
+<p>If the system requirements are satisfied:</p>
+<ol style="list-style-type: decimal">
+<li>Download the latest release.</li>
+<li>Unzip the files to your preferred output directory.</li>
+<li>Enable the shell script to be executed using <code>chmod</code> (e.g., <code>chmod +x ATACDoubletDetector.sh</code>)</li>
+</ol>
+<p>The shell file can be run from there. Java is portable and the jar should not need to be recompiled for most platforms.</p>
+</div>
+<div id="running-atac-doubletdetector" class="section level1">
+<h1>Running ATAC-DoubletDetector</h1>
+<p>Running ATAC-DoubletDetector consists of two parts: <br /> 1) Identifying all loci with &gt;2 uniquely aligning reads for each cell.</p>
+<p><img src="screenshots/Figure_Overlap.png" width="418" /> <br /> 2) detecting doublets cells that have more loci with &gt;2 reads than expected. <br /> <img src="screenshots/Figure_Matrix.png" width="280" /> <br /> The bash shell script combines both of these steps, but they can be run independently as well. The latter (doublet detection) may be useful for running doublet detection using q-values different from the default.</p>
+<p>For ease of use, executing the ATAC-DoubletDetector.jar will provide a graphical user interface (GUI) for selecting files and modifying optional parameters. Execute the jar file by double clicking it or using:</p>
+<p><code>java -jar ATAC-DoubletDetector.jar</code></p>
+<div id="bash-shell-script" class="section level2">
+<h2>Bash shell script</h2>
+<p>To run using the bash shell script, provide the following arguments: 1. Path to the bam file (e.g., possorted.bam from CellRanger) 2. Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger) 3. Path to the list of chromosomes to use for the analysis (e.g., human_chromosomes_noxy.txt) 4. Path to known repetitive elements. (e.g., blacklist_repeats_segdups_rmsk_hg19.bed depending on genome) 5. Path to an existing output directory to write output files. 6. Path of this script’s directory.</p>
+<p>Example:</p>
+<pre class="sh"><code>ATACDoubletDetector.sh /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_chromosomes_noxy.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
+</code></pre>
+<div id="advanced-optional-arguments" class="section level3">
+<h3>Advanced: Optional Arguments</h3>
+<p>The above three arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:</p>
+<p><code>--bambc</code> The bam file attribute to use to extract the barcode from reads (Default: “CB”)</p>
+<p><code>--bcidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the barcode. (Default: 0)</p>
+<p><code>--cellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the cell id. (Default: 8)</p>
+<p><code>--iscellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)</p>
+<p>Examples:</p>
+<pre class="sh"><code>ATACDoubletDetector.sh --bambc CB --bcidx 1 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
+</code></pre>
+<pre class="sh"><code>ATACDoubletDetector.sh --bcidx 1 --cellidx 2 --iscellidx 3 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
+</code></pre>
+</div>
+</div>
+<div id="running-overlap-counter-and-doublet-detection-independently" class="section level2">
+<h2>Running overlap counter and doublet detection independently</h2>
+<div id="overlap-counter-java" class="section level3">
+<h3>Overlap Counter (Java)</h3>
+<p>To run the overlap counter jar file, use <code>java -jar snATACOverlapCounter.jar</code> and provide the following input arguments:</p>
+<p><code>BAMFILE</code> Path to the bam file (e.g., possorted.bam from CellRanger)</p>
+<p><code>BCMAP</code> Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger)</p>
+<p><code>CHRLIST</code> Path to the list of chromosomes to use for the analysis (e.g., human_autosomes.txt)</p>
+<p><code>OUTDIR</code> Path to an existing output directory to write output files.</p>
+<p>Example:</p>
+<p><code>java -jar snATACOverlapCounter.jar BAMFILE BCMAP CHRLIST OUTDIR</code></p>
+<div id="advanced-optional-arguments-1" class="section level4">
+<h4>Advanced: Optional Arguments</h4>
+<p>The above arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:</p>
+<p><code>--bambc</code> The bam file attribute to use to extract the barcode from reads (Default: “CB”)</p>
+<p><code>--bcidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the barcode. (Default: 0)</p>
+<p><code>--cellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the cell id. (Default: 8)</p>
+<p><code>--iscellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)</p>
+<p>Examples:</p>
+<p><code>java -jar snATACOverlapCounter.jar --bambc CB BAMFILE BCMAP CHRLIST OUTDIR</code></p>
+<p><code>java -jar snATACOverlapCounter.jar --bambc CB --cellidx 1 BAMFILE BCMAP CHRLIST OUTDIR</code></p>
+</div>
+</div>
+<div id="doublet-detection-python" class="section level3">
+<h3>Doublet Detection (Python)</h3>
+<p>The doublet detection python file requires 3 input arguments.</p>
+<p><strong>Note: We highly recommend using the optional argument for filtering known repetitive regions. </strong></p>
+<p><code>OVERLAPS</code> Path to the Overlaps.txt output from overlap counter.</p>
+<p><code>OVERLAPSUMMARY</code> Path to the OverlapSummary.txt output from overlap counter.</p>
+<p><code>OUTDIR</code> Path to an existing output directory to write output files.</p>
+<p>Optional Arguments:</p>
+<p><code>--rfilter</code> A bed file of known repetitive regions to exclude from doublet detection.</p>
+<p><code>--q</code> The q-value threshold for detecting doublets.</p>
+<p><code>--qrep</code> The q-value threshold for inferring repetitive regions to exclude from doublet detection.</p>
+<p>Example:</p>
+<p><code>python3 ATACDoubletDetector.py --rfilter /path/to/repeats.bed OVERLAPS OVERLAPSUMMARY OUTDIR</code></p>
+</div>
+</div>
+</div>
+<div id="interpreting-results" class="section level1">
+<h1>Interpreting Results</h1>
+<div id="overlap-counter" class="section level2">
+<h2>Overlap Counter</h2>
+<p>The overlap counter script produces four output files describing the run and the data: Overlaps.txt, OverlapSummary.txt, StatSummary.txt, and RunTime.txt</p>
+<div id="overlaps.txt" class="section level3">
+<h3>Overlaps.txt</h3>
+<p>A tab delimited file with the following columns:</p>
+<ol style="list-style-type: decimal">
+<li><strong>chr</strong> - Chromosome of the genomic region with an overlap &gt;2.</li>
+<li><strong>start</strong> - The start position of the overlap &gt;2.</li>
+<li><strong>end</strong> - The end position of the overlap &gt;2.</li>
+<li><strong>Cell Id</strong> - The cell id (e.g., _cell_0, _cell_1, etc. from CellRanger).</li>
+<li><strong>Min Overlap Count</strong> - The minimum number of reads overlapping within this region.</li>
+<li><strong>Max Overlap Count</strong> - The maximum number of reads overlapping within this region.</li>
+<li><strong>Mean Mapping Quality</strong> - The average mapping quality for all reads within this region.</li>
+<li><strong>Max Mapping Quality</strong> - The max mapping quality for all reads within this region.</li>
+<li><strong>Starts</strong> - The start positions of each read within this region for this cell id.</li>
+<li><strong>Ends</strong> - The end positions of each read within this region for this cell id.</li>
+</ol>
+</div>
+<div id="overlapsummary.txt" class="section level3">
+<h3>OverlapSummary.txt</h3>
+<p>A tab delimited file with the following columns:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Cell Id</strong> - The cell id (e.g., _cell_0, _cell_1, etc. from CellRanger).</li>
+<li><strong>Number of Valid Read Pairs</strong> - The total number of valid read pairs for the cell (i.e., all forward strand reads with mates).</li>
+<li><strong>Number of Overlaps</strong> - The total number of overlaps observed in this cell (before merging).</li>
+<li><strong>Barcode</strong> - The read barcode associated with the cell id.</li>
+<li><strong>Total Number of Reads</strong> - The total number of reads (forward and reverse strange reads counted independently).</li>
+</ol>
+</div>
+<div id="statsummary.txt" class="section level3">
+<h3>StatSummary.txt</h3>
+<p>A file containing the following information:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Total Reads</strong> - The total number of reads in the bam file.</li>
+<li><strong>Duplicate Reads</strong> - The total number of reads flagged as a duplicate.</li>
+<li><strong>Low Mapping Quality Reads</strong> - The total number of reads with mapping quality &lt;= 30.</li>
+<li><strong>Valid Read Pairs</strong> - The total number of read pairs that pass the following:
+<ul>
+<li>ReadPairedFlag = True</li>
+<li>ReadUnmappedFlag = False</li>
+<li>MateUnmappedFlag = False</li>
+<li>SecondaryorSupplementary = False</li>
+<li>DuplicateReadFlag = False</li>
+<li>ReferencerIndex != MateReferenceIndex (i.e., read pairs map to the same chromosome)</li>
+<li>Insert size is positive and &lt; 900bp (~6 nucleosomes)</li>
+<li>Mapping quality &gt; 30</li>
+<li>The read’s chromosome is in the chromosome list provided.</li>
+</ul></li>
+<li><strong>Mean Read Length</strong> - The average length of forward strand reads.</li>
+<li><strong>Mean Insert Size</strong> - The average length of end to end insert sizes.</li>
+</ol>
+</div>
+<div id="runtime.txt" class="section level3">
+<h3>RunTime.txt</h3>
+<p>Shows the runtime (in seconds) for identifying all instances of read overlaps &gt;2.</p>
+</div>
+</div>
+<div id="doublet-detection" class="section level2">
+<h2>Doublet Detection</h2>
+<p>The doublet detection python script produces three output files: DoubletProbabilities, DoubletCellIds_xx.txt, and DoubletBarcodes_xx.txt (xx corresponding to the q-value threshold used to call doublets).</p>
+<div id="doubletprobabilities.txt" class="section level3">
+<h3>DoubletProbabilities.txt</h3>
+<p>A tab delimited file with the following columns:</p>
+<ol style="list-style-type: decimal">
+<li><strong>cell_id</strong> - The cell id (e.g., _cell_0, _cell_1, etc. from CellRanger)</li>
+<li><strong>barcode</strong> - The cell barcode.</li>
+<li><strong>p-value</strong> - The Poisson probability obtained from the cumulative distribution function.</li>
+<li><strong>q-value</strong> - The FDR corrected p-value for multiple hypothesis testing.</li>
+</ol>
+</div>
+<div id="doubletcellids_xx.txt" class="section level3">
+<h3>DoubletCellIds_xx.txt</h3>
+<p>Files with the DoubletCelIds prefix correspond to doublet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.</p>
+</div>
+<div id="doubletbarcodes_xx.txt" class="section level3">
+<h3>DoubletBarcodes_xx.txt</h3>
+<p>Files with the DoubletBarcodes prefix correspond to doublet cell barcodes with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.</p>
+</div>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
