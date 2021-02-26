@@ -1,0 +1,124 @@
+---
+title: "Doublet Annotation Pipeline"
+author: "Alper Eroglu"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Doublet Annotation Pipeline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r init, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "##", echo = TRUE
+)
+
+```
+
+First required packages for the pipeline are loaded in.
+
+```{r setup, message=FALSE}
+library(Seurat)
+library(Signac)
+library(dplyr)
+library(tidyr)
+library(textclean)
+library(ggplot2)
+library(MASS)
+library(stringr)
+library(mclust)
+```
+
+The functions required for the pipeline are added.
+
+```{r }
+source("R/getMarkerPeak_method.R")
+source("R/annotateDoublets_method.R")
+```
+
+Ids of the doublet cells are read in and have the following format
+
+```{r}
+doublets <- read.table("data/example_doublets_pbmc1.txt") %>% t() %>% as.vector()
+
+head(doublets)
+```
+
+The Seurat object processed by the [Signac Pipeline](https://satijalab.org/signac/articles/pbmc_vignette.html) is loaded.
+
+```{r, cache=TRUE}
+pbmc.atac <- readRDS(file = "data/example_seurat_pbmc1.Rds")
+
+pbmc.atac
+```
+
+Cells in the Seurat object must have the same format as the doublets ids.
+
+```{r}
+head(colnames(pbmc.atac))
+```
+
+The peaks have the following formatting 
+
+```{r}
+head(row.names(pbmc.atac))
+```
+
+The desired grouping is chosen for annotation and set as the identifier of the Seurat object.
+
+```{r fig1, message=F, fig.height = 5, fig.width = 5}
+Idents(pbmc.atac) <- "grouped_clusters"
+
+DimPlot(pbmc.atac, pt.size = 1, label = T, repel = T)
+```
+
+The pipeline works best with 200 cells per group for annotation but can be set as desired.
+
+```{r}
+CellsPerGroup(pbmc.atac)
+```
+
+100 marker peaks are found for the clusters 0, 1, 2, 4 and 5 as they have the required number of cells. A 2 column dataframe is returned, with one column containing the id of the peak and the other the cluster that peak belong to. This is not a required step and the users can create their own personal marker peaks using the [FindAllMarkers](https://satijalab.org/seurat/v3.2/de_vignette.html) metod of Seurat. Be careful to have an uniform number of peaks for each group, we chose 100. The naming format in the column must follow "Cluster_<ident>".
+
+```{r, cache=T}
+marker_peaks <- getMarkerPeaks(pbmc.atac, doublets = doublets, n_peaks = 100, min_cells = 200)
+
+head(marker_peaks)
+```
+
+The read count distributions of the doublet cells on the marker peaks are found. Using this information, their types(homotypic/heterotypic) and origin clusters are found. A data frame containing the read count distributions on the clusters 0, 1, 2, 4 and 5 are also reported.
+
+```{r cache=TRUE}
+doublet_annotations <- annotateDoublets(obj = pbmc.atac, marker_peaks = marker_peaks, doublets = doublets)
+
+head(doublet_annotations)
+```
+
+This data frame can be added to your Seurat object as meta data and the cells not reported are the singlets.
+
+```{r}
+pbmc.atac <- AddMetaData(pbmc.atac, doublet_annotations[,c("doublet", "d.type", "d.annotation"), drop = FALSE])
+
+pbmc.atac@meta.data[is.na(pbmc.atac@meta.data$d.type), "d.type"] <- "singlet"
+pbmc.atac@meta.data[is.na(pbmc.atac@meta.data$doublet), "doublet"] <- "singlet"
+pbmc.atac@meta.data[is.na(pbmc.atac@meta.data$d.annotation), "d.annotation"] <- "singlet"
+
+```
+
+Just the doublets identified by the count based doublet detection part of ATAC-DoubletDetector.
+
+```{r fig2, message=F, fig.height = 5, fig.width = 5}
+DimPlot(pbmc.atac, group.by = "doublet", pt.size = 1, 
+        cols = c("singlet" = "grey", "doublet" = "purple"), 
+        order = c("doublet", "singlet"))
+```
+
+The types of the same doublets found by the Doublet Annotation Pipeline.
+
+```{r fig3, message=F, fig.height = 5, fig.width = 5}
+DimPlot(pbmc.atac, group.by = "d.type", pt.size = 1, 
+        cols = c("singlet" = "grey", "homotypic" = "red", "heterotypic" = "blue"), 
+        order = c("heterotypic", "homotypic", "singlet"))
+```
+
