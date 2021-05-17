@@ -58,6 +58,10 @@ public class OverlapCounter {
 						barcodeidx = args[i+1];
 						i++;
 						break;
+					case "--iscellidx":  
+						iscellidx = args[i+1];
+						i++;
+						break;
 					case "--maxinsertsize":  
 						maxinsertsize = args[i+1];
 						i++;
