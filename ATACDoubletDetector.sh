@@ -27,9 +27,12 @@ done
 if [[ ${#ARGUMENTS[@]} -ne 6 ]]; then
 	echo "Usage: ATACDoubletDetector.sh bamfile barcodemap chromosomelist repeatfilter outputdirectory scriptpath";
 	echo "Options: --bambc     Bamfile attribute used for the barcode. (Default=\"CB\")";
+	echo "         --forcesorted Forces the input bam file to be treated as sorted.";
 	echo "         --bcidx     The column index of the CSV for barcode. (Default: 0)";
 	echo "         --cellidx   The column index of the CSV for cellid. (Default: 0)";
 	echo "         --iscellidx The index for determining cells (selecting values=1). (Default: 9)";
+	echo "         --mapqthresh Threshold for filtering low map quality reads (<= comparison). (Default: 30)";
+	echo "         --maxinsertsize The maximum insert size (in bp) between read pairs. (Default: 900)";
 	exit 0;
 fi
 
