@@ -46,8 +46,16 @@ Example:
 
 `ATACDoubletDetector.sh /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_chromosomes_noxy.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
 
+Note: If you know the input bam file is coordinate sorted and you get an error message saying it's not, please use the `--forcesorted` option. There is a problem with the SAMReader library not recognizing this flag correctly in the header.
+
+Example:
+
+`ATACDoubletDetector.sh --forcesorted /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_chromosomes_noxy.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
+
 ### Advanced: Optional Arguments ###
 The above three arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:
+
+`--forcesorted` Forces the input bam file to be treated as sorted.
 
 `--bambc` The bam file attribute to use to extract the barcode from reads (Default: "CB")
 

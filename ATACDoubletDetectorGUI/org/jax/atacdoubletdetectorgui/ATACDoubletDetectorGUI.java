@@ -114,7 +114,7 @@ public class ATACDoubletDetectorGUI {
 		final JTextField bcidx = new JTextField("0");
 		advancedpanel.add(util.getHorizontalField(new JLabel("Barcode index (CSV):"), bcidx));
 		
-		final JTextField cellidfield = new JTextField("8");
+		final JTextField cellidfield = new JTextField("0");
 		advancedpanel.add(util.getHorizontalField(new JLabel("Cell id index (CSV):"), cellidfield));
 		
 		final JTextField iscellfield = new JTextField("9");

@@ -13,6 +13,7 @@ import java.util.TreeSet;
 
 import org.jax.snatacoverlapcounter.util.Util;
 
+import htsjdk.samtools.SAMFileHeader;
 //import htsjdk.samtools.SAMFileHeader;
 //import htsjdk.samtools.SAMFileWriter;
 //import htsjdk.samtools.SAMFileWriterFactory;
@@ -25,18 +26,20 @@ import htsjdk.samtools.ValidationStringency;
 
 public class OverlapCounter {
 	
-	private final int MAXINSERTSIZE=900; //This is equivalent to 6 nucleosomes
-	private final int MAPQTHRESHOLD=30;
 	private String _barcodeattribute;
-	private int _barcodeidx, _cellididx, _iscellidx;
+	private int _barcodeidx, _cellididx, _iscellidx, _mapqthreshold, _maxinsertsize;
+	private boolean _forcesorted;
 	
 	public static void main(String[] args) {
 		
 		String[] parsedargs = new String[5];
 		String barcodeattribute = "CB";
 		String barcodeidx = "0";
-		String cellidx = "8";
+		String cellidx = "0";
 		String iscellidx = "9";
+		String maxinsertsize = "900";
+		String mapqthreshold = "30";
+		boolean forcesorted = false;
 		
 		int argidx = 0;
 		for(int i = 0; i < args.length; i++) {
@@ -55,9 +58,16 @@ public class OverlapCounter {
 						barcodeidx = args[i+1];
 						i++;
 						break;
-					case "--iscellidx":  
-						iscellidx = args[i+1];
+					case "--maxinsertsize":  
+						maxinsertsize = args[i+1];
 						i++;
+						break;
+					case "--mapqthresh":  
+						mapqthreshold = args[i+1];
+						i++;
+						break;
+					case "--forcesorted":  
+						forcesorted = true;
 						break;
 					default:
 						if(args[i].startsWith("-")) {
@@ -81,10 +91,13 @@ public class OverlapCounter {
 		if(argidx != 4) {
 			System.out.println("Usage: bamfile cellidbarcodemap chromosomelist outputdirectory");
 			System.out.println("Options: --bambc     Bamfile attribute used for the barcode. (Default=\"CB\")");
+			System.out.println("         --forcesorted Forces the input bam file to be treated as sorted.");
 			System.out.println("         --bcidx     The column index of the CSV for barcode. (Default: 0)");
-			System.out.println("         --cellidx   The column index of the CSV for cellid. (Default: 8)");
+			System.out.println("         --cellidx   The column index of the CSV for cellid. (Default: 0)");
 			System.out.println("         --iscellidx The index for determining cells (selecting values=1). (Default: 9)");
-			
+			System.out.println("         --mapqthresh Threshold for filtering low map quality reads (<= comparison). (Default: 30)");
+			System.out.println("         --maxinsertsize The maximum insert size (in bp) between read pairs. (Default: 900)");
+
 			System.exit(0);
 		}
 		long timestart = System.currentTimeMillis();
@@ -94,7 +107,7 @@ public class OverlapCounter {
 		String chromlist = parsedargs[2];
 		String outdir = parsedargs[3];
 		
-		OverlapCounter pc = new OverlapCounter(barcodeattribute, barcodeidx, cellidx, iscellidx);
+		OverlapCounter pc = new OverlapCounter(barcodeattribute, barcodeidx, cellidx, iscellidx, forcesorted, mapqthreshold, maxinsertsize);
 		try {
 			 pc.findOverlaps(bamfile, cellbarcodes, chromlist, outdir);
 		} catch (IOException e) {
@@ -115,12 +128,15 @@ public class OverlapCounter {
 		}
 	}
 	
-	public OverlapCounter(String bca, String bcidx, String cellidx, String iscellidx) {
+	public OverlapCounter(String bca, String bcidx, String cellidx, String iscellidx, boolean forcesorted, String mapqthresh, String maxinsertsize) {
 		_barcodeattribute = bca;
+		_forcesorted = forcesorted;
 		try {
 			_barcodeidx = Integer.parseInt(bcidx);
 			_cellididx = Integer.parseInt(cellidx);
 			_iscellidx = Integer.parseInt(iscellidx);
+			_mapqthreshold = Integer.parseInt(mapqthresh);
+			_maxinsertsize = Integer.parseInt(maxinsertsize);
 		}
 		catch(NumberFormatException e) {
 			System.out.println("Please use integer values for index locations.");
@@ -144,8 +160,12 @@ public class OverlapCounter {
 		
 		final SamReader reader = factory.open(new File(bamfile));
 		
+		if(_forcesorted) {
+			reader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
+		}
+		
 		if(!(reader.getFileHeader().getSortOrder().getComparatorInstance() instanceof SAMRecordCoordinateComparator)) {
-			System.out.println("The input BAM file must be coordinate sorted.");
+			System.out.println("The input BAM file must be coordinate sorted. If you believe the bam file is sorted, use the --forcesorted option.");
 			reader.close();
 			System.exit(0);
 		}
@@ -216,7 +236,7 @@ public class OverlapCounter {
 			if(next.getDuplicateReadFlag()) {
 				dupreads++;
 			}
-			if(next.getMappingQuality() <= MAPQTHRESHOLD) {
+			if(next.getMappingQuality() <= _mapqthreshold) {
 				lowmapq++;
 			}
 			
@@ -226,7 +246,7 @@ public class OverlapCounter {
 			
 
 			
-			if(!isnegative && u.isValidRead(next) && insertsize > 0 && next.getMappingQuality() > MAPQTHRESHOLD) {
+			if(!isnegative && u.isValidRead(next) && insertsize > 0 && next.getMappingQuality() > _mapqthreshold) {
 				
 				String chr = next.getReferenceName();
 				if(chromsizesmap.contains(chr)) {
@@ -267,7 +287,7 @@ public class OverlapCounter {
 					int end = start+insertsize-1;
 					int endtoendinsertsize = end-start;
 					
-					if(end-start > MAXINSERTSIZE) {
+					if(end-start > _maxinsertsize) {
 						continue;
 					}
 					
@@ -344,7 +364,7 @@ public class OverlapCounter {
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outfile));
 		bw.write("Total Reads:\t"+Integer.toString(totalreads)+"\n");
 		bw.write("Duplicate Reads:\t"+Integer.toString(duplicates)+"\n");
-		bw.write("Low Mapping Quality Reads (<="+Integer.toString(MAPQTHRESHOLD)+"):\t"+Integer.toString(lowmapq)+"\n");
+		bw.write("Low Mapping Quality Reads (<="+Integer.toString(_mapqthreshold)+"):\t"+Integer.toString(lowmapq)+"\n");
 		bw.write("Valid Reads:\t"+Integer.toString(validreads)+"\n");
 		bw.write("Total Reads:\t"+Integer.toString(totalreads)+"\n");
 
