@@ -66,6 +66,7 @@ The above three arguments can be used for common CellRanger outputs. Use the fol
 `--iscellidx` The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)
 
 `--mapqthresh` Threshold for filtering low map quality reads (<= comparison). (Default: 30)
+
 `--maxinsertsize` The maximum insert size (in bp) between read pairs. (Default: 900)
 
 Examples:
