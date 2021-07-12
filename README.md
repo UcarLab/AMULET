@@ -79,10 +79,7 @@ BAM Input Only:
 
 `--mapqthresh` Threshold for filtering low map quality reads (<= comparison). (Default: 30)
 
-<<<<<<< HEAD
-=======
 `--maxinsertsize` The maximum insert size (in bp) between read pairs. (Default: 900)
->>>>>>> branch 'main' of https://github.com/UcarLab/ATAC-DoubletDetector.git
 
 Examples:
 
