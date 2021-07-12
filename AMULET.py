@@ -247,7 +247,7 @@ for i in range(len(doublets_with_prob)):
 pd.DataFrame(doublets_cellids).to_csv(outdir+"/MultipletCellIds_"+str(qvalthresh).split(".")[1]+".txt", header=None, index=None, sep="\t")
 pd.DataFrame(doublets_barcodes).to_csv(outdir+"/MultipletBarcodes_"+str(qvalthresh).split(".")[1]+".txt", header=None, index=None, sep="\t")
 
-pd.DataFrame(doublets_with_prob_barcode, columns=["cell_id", "barcode", "p-value", "q-value"]).to_csv(outdir+"/DoubletProbabilities.txt", index=None, sep="\t")
+pd.DataFrame(doublets_with_prob_barcode, columns=["cell_id", "barcode", "p-value", "q-value"]).to_csv(outdir+"/MultipletProbabilities.txt", index=None, sep="\t")
 
 #Output stats
 stats_numbercells = len(cellids)
