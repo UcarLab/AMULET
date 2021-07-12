@@ -12,11 +12,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.jax.snatacoverlapcounter.util.Util;
+import org.jax.snatacoverlapcounter.util.ValidReadSummary;
 
 import htsjdk.samtools.SAMFileHeader;
-//import htsjdk.samtools.SAMFileHeader;
-//import htsjdk.samtools.SAMFileWriter;
-//import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMRecordIterator;
@@ -27,18 +25,21 @@ import htsjdk.samtools.ValidationStringency;
 public class OverlapCounter {
 	
 	private String _barcodeattribute;
-	private int _barcodeidx, _cellididx, _iscellidx, _mapqthreshold, _maxinsertsize;
+	private int _barcodeidx, _cellididx, _iscellidx, _mapqthreshold, _maxinsertsize, _forwardcorrection, _reversecorrection, _expectedoverlap;
 	private boolean _forcesorted;
 	
 	public static void main(String[] args) {
 		
 		String[] parsedargs = new String[5];
+		String expectedoverlap = "2";
 		String barcodeattribute = "CB";
 		String barcodeidx = "0";
 		String cellidx = "0";
 		String iscellidx = "9";
 		String maxinsertsize = "900";
 		String mapqthreshold = "30";
+		String forwardcorrection = "4";
+		String reversecorrection = "-5";
 		boolean forcesorted = false;
 		
 		int argidx = 0;
@@ -46,6 +47,10 @@ public class OverlapCounter {
 			
 			if(i < args.length-1) {
 				switch(args[i]) {
+					case "--expectedoverlap":  
+						expectedoverlap = args[i+1];
+						i++;
+						break;
 					case "--bambc":  
 						barcodeattribute = args[i+1];
 						i++;
@@ -68,6 +73,14 @@ public class OverlapCounter {
 						break;
 					case "--mapqthresh":  
 						mapqthreshold = args[i+1];
+						i++;
+						break;
+					case "--startbases":  
+						forwardcorrection = args[i+1];
+						i++;
+						break;
+					case "--endbases":  
+						reversecorrection = args[i+1];
 						i++;
 						break;
 					case "--forcesorted":  
@@ -94,13 +107,16 @@ public class OverlapCounter {
 		
 		if(argidx != 4) {
 			System.out.println("Usage: bamfile cellidbarcodemap chromosomelist outputdirectory");
-			System.out.println("Options: --bambc     Bamfile attribute used for the barcode. (Default=\"CB\")");
+			System.out.println("Options: --expectedoverlap    Expected number of reads overlapping. (Default: 2)");
+			System.out.println("         --bambc     Bamfile attribute used for the barcode. (Default: \"CB\")");
 			System.out.println("         --forcesorted Forces the input bam file to be treated as sorted.");
 			System.out.println("         --bcidx     The column index of the CSV for barcode. (Default: 0)");
 			System.out.println("         --cellidx   The column index of the CSV for cellid. (Default: 0)");
 			System.out.println("         --iscellidx The index for determining cells (selecting values=1). (Default: 9)");
 			System.out.println("         --mapqthresh Threshold for filtering low map quality reads (<= comparison). (Default: 30)");
 			System.out.println("         --maxinsertsize The maximum insert size (in bp) between read pairs. (Default: 900)");
+			System.out.println("         --startbases The amount of bases add to the start position. (Default: 4)");
+			System.out.println("         --endbases The amount of bases to add to the end position (can be negative). (Default: -5)");
 
 			System.exit(0);
 		}
@@ -111,9 +127,11 @@ public class OverlapCounter {
 		String chromlist = parsedargs[2];
 		String outdir = parsedargs[3];
 		
-		OverlapCounter pc = new OverlapCounter(barcodeattribute, barcodeidx, cellidx, iscellidx, forcesorted, mapqthreshold, maxinsertsize);
+		OverlapCounter pc = new OverlapCounter(expectedoverlap, barcodeattribute, barcodeidx, cellidx, iscellidx, forcesorted, mapqthreshold, maxinsertsize, forwardcorrection, reversecorrection);
+		
 		try {
-			 pc.findOverlaps(bamfile, cellbarcodes, chromlist, outdir);
+			pc.writeParameters(outdir+"/OverlapCounter-LastRunParameters.txt");
+			pc.findOverlaps(bamfile, cellbarcodes, chromlist, outdir);
 		} catch (IOException e) {
 			e.printStackTrace();
 			try {
@@ -132,15 +150,18 @@ public class OverlapCounter {
 		}
 	}
 	
-	public OverlapCounter(String bca, String bcidx, String cellidx, String iscellidx, boolean forcesorted, String mapqthresh, String maxinsertsize) {
+	public OverlapCounter(String expectedoverlap, String bca, String bcidx, String cellidx, String iscellidx, boolean forcesorted, String mapqthresh, String maxinsertsize, String forwardcorrection, String reversecorrection) {
 		_barcodeattribute = bca;
 		_forcesorted = forcesorted;
 		try {
+			_expectedoverlap = Integer.parseInt(expectedoverlap);
 			_barcodeidx = Integer.parseInt(bcidx);
 			_cellididx = Integer.parseInt(cellidx);
 			_iscellidx = Integer.parseInt(iscellidx);
 			_mapqthreshold = Integer.parseInt(mapqthresh);
 			_maxinsertsize = Integer.parseInt(maxinsertsize);
+			_forwardcorrection = Integer.parseInt(forwardcorrection);
+			_reversecorrection = Integer.parseInt(reversecorrection);
 		}
 		catch(NumberFormatException e) {
 			System.out.println("Please use integer values for index locations.");
@@ -157,7 +178,8 @@ public class OverlapCounter {
 	}
 	
 	public void findOverlaps(String bamfile, String cellbarcodes, String chromsizes, String outdir) throws IOException{
-
+		int overlapthresh = _expectedoverlap+1; //If the expected is 2 then we are looking for overlaps of 3 or more
+		
 		SamReaderFactory factory = SamReaderFactory.makeDefault()
 	              .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS, SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS)
 	              .validationStringency(ValidationStringency.SILENT);
@@ -176,14 +198,24 @@ public class OverlapCounter {
 		
 		SAMRecordIterator it = reader.iterator();
 		Util u = new Util();
+		ValidReadSummary vrs = new ValidReadSummary();
 		TreeSet<String> chromsizesmap = u.readChromSizes(chromsizes);
 		TreeMap<String, String> cellbarcodemap = u.readCellBarcodes(cellbarcodes, _barcodeidx, _cellididx, _iscellidx);
 
 		
 		System.out.println("Reading BAM file.");
 		int totalreads = 0;
-		int dupreads = 0;
+		
 		int lowmapq = 0;
+		int insertsizeflag = 0;
+		int positive = 0;
+		int negative = 0;
+		int notinchromosome = 0;
+		int validreads = 0;
+		long readlengthsum = 0;
+		long insertsizesum = 0;
+		
+		
 		String curchr = null;
 
 		
@@ -199,36 +231,12 @@ public class OverlapCounter {
 			treadcounts.put(cellid, new Incrementor(0));
 			overlapcounts.put(cellid, new Incrementor(0));
 		}
+		
+		TreeSet<String> omittedchromosomes = new TreeSet<String>();
 
-		BufferedWriter bw = new BufferedWriter(new FileWriter(outdir+"/Overlaps.txt"));
-		bw.write("chr");
-		bw.write("\t");
-		bw.write("start");
-		bw.write("\t");
-		bw.write("end");
-		bw.write("\t");
-		bw.write("cell id");
-		bw.write("\t");
-		bw.write("Min Overlap Count");
-		bw.write("\t");
-		bw.write("Max Overlap Count");
-		bw.write("\t");
-		bw.write("Mean Mapping Quality");
-		bw.write("\t");
-		bw.write("Min Mapping Quality");
-		bw.write("\t");
-		bw.write("Max Mapping Quality");
-		bw.write("\t");
-		bw.write("Starts");
-		bw.write("\t");
-		bw.write("Ends");
-		bw.write("\n");
+		BufferedWriter bw = getOverlapWriter(outdir+"/Overlaps.txt");
 		
-		
-		int validreads = 0;
-		long readlengthsum = 0;
-		long insertsizesum = 0;
-		
+
 		while(it.hasNext()){
 			if(totalreads % 10000000 == 0) {
 				System.out.println(Integer.toString(totalreads));
@@ -237,20 +245,23 @@ public class OverlapCounter {
 			SAMRecord next = it.next();
 			
 			totalreads++;
-			if(next.getDuplicateReadFlag()) {
-				dupreads++;
-			}
-			if(next.getMappingQuality() <= _mapqthreshold) {
+			int curmapq = next.getMappingQuality();
+			if(curmapq <= _mapqthreshold) {
 				lowmapq++;
 			}
 			
 			boolean isnegative = next.getReadNegativeStrandFlag();
+			if(isnegative) {
+				negative++;
+			}
+			else {
+				positive++;
+			}
+			
 			int insertsize = next.getInferredInsertSize();
 			
 			
-
-			
-			if(!isnegative && u.isValidRead(next) && insertsize > 0 && next.getMappingQuality() > _mapqthreshold) {
+			if(insertsize > 0 && curmapq > _mapqthreshold && vrs.isValidRead(next)) {
 				
 				String chr = next.getReferenceName();
 				if(chromsizesmap.contains(chr)) {
@@ -259,7 +270,7 @@ public class OverlapCounter {
 						//find/write overlaps
 						for(Iterator<String> cellidit = cellbarcodemap.values().iterator(); cellidit.hasNext();) {
 							String curcellid = cellidit.next();
-							LinkedList<OverlapLocation> curol = findOverlaps(previousreads.get(curcellid), 3, curchr);
+							LinkedList<OverlapLocation> curol = findOverlaps(previousreads.get(curcellid), overlapthresh, curchr);
 							writeOverlaps(bw, curcellid, curol);
 							overlapcounts.get(curcellid).increment(curol.size());
 						}
@@ -286,19 +297,21 @@ public class OverlapCounter {
 					if(cellid == null) {
 						continue;
 					}
-					
-					int start = next.getAlignmentStart();
-					int end = start+insertsize-1;
+
+					int orig_start = next.getAlignmentStart()-1;
+					int start = orig_start+_forwardcorrection;
+					int end = orig_start+insertsize+_reversecorrection;
 					int endtoendinsertsize = end-start;
 					
-					if(end-start > _maxinsertsize) {
+					
+					if(endtoendinsertsize > _maxinsertsize || endtoendinsertsize <= 0) {
+						insertsizeflag++;
 						continue;
 					}
 					
 					
 					readlengthsum += next.getReadLength();
 					insertsizesum += endtoendinsertsize;
-					//w.addAlignment(next);
 					validreads += 1;
 					
 					int mappingquality = next.getMappingQuality();
@@ -311,12 +324,13 @@ public class OverlapCounter {
 					int endposition = previousend.get(cellid);
 					
 					if(endposition < start) {
-						LinkedList<OverlapLocation> ol = findOverlaps(curlist, 3, curchr);
+						LinkedList<OverlapLocation> ol = findOverlaps(curlist, overlapthresh, curchr);
 						writeOverlaps(bw, cellid, ol);
 						overlapcounts.get(cellid).increment(ol.size());
 
 						//Start a new list
 						LinkedList<Location> newlist = new LinkedList<Location>();
+						newlist.add(readlocation);
 						previousreads.put(cellid, newlist);						
 					}
 					else {
@@ -326,6 +340,21 @@ public class OverlapCounter {
 					int newend = Math.max(endposition, end);
 					previousend.put(cellid, newend);
 					
+					
+				}
+				else {
+					String barcode = u.getBarcode(next, _barcodeattribute);
+
+					if(barcode == null) {
+						continue;
+					}
+					String cellid = cellbarcodemap.get(barcode);
+					
+					if(cellid != null) {
+						treadcounts.get(cellid).increment();
+						omittedchromosomes.add(chr);
+						notinchromosome++;
+					}
 					
 				}
 				
@@ -349,32 +378,173 @@ public class OverlapCounter {
 			
 		}
 
-		//w.close();
-		
 		bw.flush();
 		bw.close();
 		
 		writeOverlapCounts(vreadcounts, overlapcounts, cellbarcodemap, treadcounts, outdir+"/OverlapSummary.txt");
-		writeReadInsertStatistics(totalreads, dupreads, lowmapq, validreads, readlengthsum, insertsizesum, outdir+"/StatSummary.txt");
+		writeReadInsertStatistics(totalreads, validreads, positive, negative, notinchromosome, vrs, insertsizeflag, lowmapq, readlengthsum, insertsizesum, outdir+"/StatSummary.txt");
+
+		if(omittedchromosomes.size() > 0) {
+			System.out.println("The following chromosomes were omitted:");
+			for(Iterator<String> ocit = omittedchromosomes.iterator(); ocit.hasNext();) {
+				System.out.println(ocit.next());
+			}
+		}
 		
 		System.out.println("Complete.");
 	}
 	
-	private void writeReadInsertStatistics(int totalreads, int duplicates, int lowmapq, int validreads, long readlengthsum, long insertsizesum, String outfile) throws IOException {
+	
+	private BufferedWriter getOverlapWriter(String filepath) throws IOException {
+		BufferedWriter bw = new BufferedWriter(new FileWriter(filepath));
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("chr");
+		sb.append("\t");
+		sb.append("start");
+		sb.append("\t");
+		sb.append("end");
+		sb.append("\t");
+		sb.append("cell id");
+		sb.append("\t");
+		sb.append("Min Overlap Count");
+		sb.append("\t");
+		sb.append("Max Overlap Count");
+		sb.append("\t");
+		sb.append("Mean Mapping Quality");
+		sb.append("\t");
+		sb.append("Min Mapping Quality");
+		sb.append("\t");
+		sb.append("Max Mapping Quality");
+		sb.append("\t");
+		sb.append("Starts");
+		sb.append("\t");
+		sb.append("Ends");
+		sb.append("\n");
+		
+		bw.write(sb.toString());
+		return bw;
+	}
+	
+
+	private void writeParameters(String outfile) throws IOException {
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outfile));
+		StringBuilder sb = new StringBuilder();
+		sb.append("Parameter:\tValue\n");
+		
+		sb.append("expectedoverlap:\t");
+		sb.append(Integer.toString(_expectedoverlap));
+		sb.append("\n");
+		
+		sb.append("bambc:\t");
+		sb.append(_barcodeattribute);
+		sb.append("\n");
+		
+		sb.append("forcesorted:\t");
+		sb.append(Boolean.toString(_forcesorted));
+		sb.append("\n");
+		
+		sb.append("bcidx:\t");
+		sb.append(Integer.toString(_barcodeidx));
+		sb.append("\n");
+		
+		sb.append("cellidx:\t");
+		sb.append(Integer.toString(_cellididx));
+		sb.append("\n");
+		
+		sb.append("iscellidx:\t");
+		sb.append(Integer.toString(_iscellidx));
+		sb.append("\n");
+		
+		sb.append("mapqthresh:\t");
+		sb.append(Integer.toString(_mapqthreshold));
+		sb.append("\n");
+		
+		sb.append("maxinsertsize:\t");
+		sb.append(Integer.toString(_maxinsertsize));
+		sb.append("\n");
+		
+		sb.append("startbases:\t");
+		sb.append(Integer.toString(_forwardcorrection));
+		sb.append("\n");
+		
+		sb.append("endbases:\t");
+		sb.append(Integer.toString(_reversecorrection));
+		sb.append("\n");
+		
+		bw.write(sb.toString());
+		bw.flush();
+		bw.close();
+		
+	}
+	
+	private void writeReadInsertStatistics(int totalreads, int validreads, int positive, int negative, int notinchromosome, ValidReadSummary vrs, int insert, int mq, long readlengthsum, long insertsizesum, String outfile) throws IOException {
 		
 		double meanreadlength = (double)readlengthsum/(double)validreads;
 		double meaninsertsize = (double)insertsizesum/(double)validreads;
 		
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append("Total Reads:\t");
+		sb.append(Integer.toString(totalreads));
+		
+		sb.append("\nValid Read Pairs:\t");
+		sb.append(Integer.toString(validreads));
+
+		sb.append("\nPositive:\t");
+		sb.append(Integer.toString(positive));
+		
+		sb.append("\nNegative:\t");
+		sb.append(Integer.toString(negative));
+		
+		sb.append("\nNot in chromosome list:\t");
+		sb.append(Integer.toString(notinchromosome));
+
+		sb.append("\nInsert size (<=0 or >");
+		sb.append(Integer.toString(_maxinsertsize));
+		sb.append("):\t");
+		sb.append(Integer.toString(insert));
+
+		sb.append("\nLow Mapping Quality Reads (<=");
+		sb.append(Integer.toString(_mapqthreshold));
+		sb.append("):\t");
+		sb.append(Integer.toString(mq));
+
+		sb.append("\nMean Read Length:\t");
+		sb.append(Double.toString(meanreadlength));
+		
+		sb.append("\nMean Insert Size:\t");
+		sb.append(Double.toString(meaninsertsize));
+
+		//Write SAMTools Flag Checks
+		sb.append("\nSAMTools Flag Checked:\t");
+		sb.append(Integer.toString(vrs.getTotalReads()));
+		
+		sb.append("\nSAMTools Flag Passed:\t");
+		sb.append(Integer.toString(vrs.getValidReads()));
+		
+		sb.append("\nSAMTools Flag Duplicate:\t");
+		sb.append(Integer.toString(vrs.getDuplicate()));
+		
+		sb.append("\nSAMTools Flag Unpaired:\t");
+		sb.append(Integer.toString(vrs.getUnpaired()));
+		
+		sb.append("\nSAMTools Flag Unmapped:\t");
+		sb.append(Integer.toString(vrs.getUnmapped()));
+		
+		sb.append("\nSAMTools Flag Mate Unmapped:\t");
+		sb.append(Integer.toString(vrs.getMateUnmapped()));
+		
+		sb.append("\nSAMTools Flag Secondary:\t");
+		sb.append(Integer.toString(vrs.getSecondary()));
+		
+		sb.append("\nSAMTools Flag Reference Mismatch:\t");
+		sb.append(Integer.toString(vrs.getRefMismatch()));
+		sb.append("\n");
+		
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outfile));
-		bw.write("Total Reads:\t"+Integer.toString(totalreads)+"\n");
-		bw.write("Duplicate Reads:\t"+Integer.toString(duplicates)+"\n");
-		bw.write("Low Mapping Quality Reads (<="+Integer.toString(_mapqthreshold)+"):\t"+Integer.toString(lowmapq)+"\n");
-		bw.write("Valid Reads:\t"+Integer.toString(validreads)+"\n");
-		bw.write("Total Reads:\t"+Integer.toString(totalreads)+"\n");
-
-		bw.write("Mean Read Length:\t"+Double.toString(meanreadlength)+"\n");
-		bw.write("Mean Insert Size:\t"+Double.toString(meaninsertsize)+"\n");
-
+		bw.write(sb.toString());
 		bw.flush();
 		bw.close();
 		
@@ -383,16 +553,19 @@ public class OverlapCounter {
 	private void writeOverlapCounts(TreeMap<String, Incrementor> numreads, TreeMap<String, Incrementor> overlaps, TreeMap<String, String> barcode, TreeMap<String, Incrementor> tnumreads, String outfile) throws IOException {
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outfile));
 		
-		bw.write("Cell Id");
-		bw.write("\t");
-		bw.write("Number of Valid Read Pairs");
-		bw.write("\t");
-		bw.write("Number of Overlaps");
-		bw.write("\t");
-		bw.write("Barcode");
-		bw.write("\t");
-		bw.write("Total Number of Reads");
-		bw.write("\n");
+		StringBuilder sb = new StringBuilder();
+		sb.append("Cell Id");
+		sb.append("\t");
+		sb.append("Number of Valid Read Pairs");
+		sb.append("\t");
+		sb.append("Number of Overlaps");
+		sb.append("\t");
+		sb.append("Barcode");
+		sb.append("\t");
+		sb.append("Total Number of Reads");
+		sb.append("\n");
+		
+		bw.write(sb.toString());
 		
 		TreeMap<String, String> revbarcode = new TreeMap<String, String>();
 		for (Iterator<Entry<String, String>> it = barcode.entrySet().iterator(); it.hasNext();) {
@@ -405,16 +578,19 @@ public class OverlapCounter {
 		
 		for(Iterator<String> it = numreads.keySet().iterator(); it.hasNext();) {
 			String cellid = it.next();
-			bw.write(cellid);
-			bw.write("\t");
-			bw.write(Integer.toString(numreads.get(cellid).getValue()));
-			bw.write("\t");
-			bw.write(Integer.toString(overlaps.get(cellid).getValue()));
-			bw.write("\t");
-			bw.write(revbarcode.get(cellid));
-			bw.write("\t");
-			bw.write(Integer.toString(tnumreads.get(cellid).getValue()));
-			bw.write("\n");
+			
+			sb = new StringBuilder();
+			sb.append(cellid);
+			sb.append("\t");
+			sb.append(Integer.toString(numreads.get(cellid).getValue()));
+			sb.append("\t");
+			sb.append(Integer.toString(overlaps.get(cellid).getValue()));
+			sb.append("\t");
+			sb.append(revbarcode.get(cellid));
+			sb.append("\t");
+			sb.append(Integer.toString(tnumreads.get(cellid).getValue()));
+			sb.append("\n");
+			bw.write(sb.toString());
 		}
 		
 		bw.flush();
@@ -424,33 +600,35 @@ public class OverlapCounter {
 	
 	private void writeOverlaps(BufferedWriter bw, String cellid, LinkedList<OverlapLocation> ol) throws IOException {
 
-		
+		StringBuilder sb = new StringBuilder();
 		for(Iterator<OverlapLocation> olit = ol.iterator(); olit.hasNext();) {
 			OverlapLocation curoverlap = olit.next();
 			
-			bw.write(curoverlap.getChr());
-			bw.write("\t");
-			bw.write(Integer.toString(curoverlap.getStart()));
-			bw.write("\t");
-			bw.write(Integer.toString(curoverlap.getEnd()));
-			bw.write("\t");
-			bw.write(cellid);
-			bw.write("\t");
-			bw.write(Integer.toString(curoverlap.getMinOverlap()));
-			bw.write("\t");
-			bw.write(Integer.toString(curoverlap.getMaxOverlap()));
-			bw.write("\t");
-			bw.write(Double.toString(curoverlap.getMeanMappingQuality()));
-			bw.write("\t");
-			bw.write(Integer.toString(curoverlap.getMinMappingQuality()));
-			bw.write("\t");
-			bw.write(Integer.toString(curoverlap.getMaxMappingQuality()));
-			bw.write("\t");
-			bw.write(curoverlap.getStarts());
-			bw.write("\t");
-			bw.write(curoverlap.getEnds());
-			bw.write("\n");
+			sb.append(curoverlap.getChr());
+			sb.append("\t");
+			sb.append(Integer.toString(curoverlap.getStart()));
+			sb.append("\t");
+			sb.append(Integer.toString(curoverlap.getEnd()));
+			sb.append("\t");
+			sb.append(cellid);
+			sb.append("\t");
+			sb.append(Integer.toString(curoverlap.getMinOverlap()));
+			sb.append("\t");
+			sb.append(Integer.toString(curoverlap.getMaxOverlap()));
+			sb.append("\t");
+			sb.append(Double.toString(curoverlap.getMeanMappingQuality()));
+			sb.append("\t");
+			sb.append(Integer.toString(curoverlap.getMinMappingQuality()));
+			sb.append("\t");
+			sb.append(Integer.toString(curoverlap.getMaxMappingQuality()));
+			sb.append("\t");
+			sb.append(curoverlap.getStarts());
+			sb.append("\t");
+			sb.append(curoverlap.getEnds());
+			sb.append("\n");
 		}
+		
+		bw.write(sb.toString());
 	}
 
 	private LinkedList<OverlapLocation> findOverlaps(LinkedList<Location> l, int overlapthresh, String chr) {
@@ -462,7 +640,7 @@ public class OverlapCounter {
 		for(Iterator<Location> it = l.iterator(); it.hasNext();) {
 			Location next = it.next();
 			ol.add(new OverlapIndex(next.getStart(),1));
-			ol.add(new OverlapIndex(next.getEnd()+1,-1));
+			ol.add(new OverlapIndex(next.getEnd(),-1));
 		}
 		
 		ol.sort(new OverlapIndexComparator());
@@ -479,7 +657,7 @@ public class OverlapCounter {
 				runningsumlist.getLast().setValue(runningsum);
 			}
 			else {
-				runningsumlist.add(new OverlapIndex(runningsum, runningsum));
+				runningsumlist.add(new OverlapIndex(position, runningsum));
 			}
 			prevposition = position;
 		}
@@ -494,13 +672,9 @@ public class OverlapCounter {
 		int minoverlap = 0;
 		int maxoverlap = 0;
 		
-		Iterator<OverlapIndex> positioniteror = ol.iterator();
-		
 		for(Iterator<OverlapIndex> it = runningsumlist.iterator(); it.hasNext();) {
 			OverlapIndex next = it.next();
-			OverlapIndex nextpos = positioniteror.next();
-			
-			int curposition = nextpos.getPosition();
+			int curposition = next.getPosition();
 			int curvalue = next.getValue();
 			if(curvalue < overlapthresh && start) {
 				intervals.add(new OverlapLocation(chr, startposition, curposition, minoverlap, maxoverlap));
@@ -519,6 +693,11 @@ public class OverlapCounter {
 				maxoverlap = Math.max(curvalue, maxoverlap);
 			}
 			
+		}
+		
+		//Include overlaps that extend for the rest of the list via same end points
+		if(start) {
+			intervals.add(new OverlapLocation(chr, startposition, runningsumlist.getLast().getPosition(), minoverlap, maxoverlap));
 		}
 		
 		setOverlapInfo(intervals, l);

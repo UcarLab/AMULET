@@ -6,7 +6,7 @@ import statsmodels.api as sm
 import argparse
 
 
-parser = argparse.ArgumentParser(description='ATAC-DoubletDetector: A count-Based doublet detection method.')
+parser = argparse.ArgumentParser(description='AMULET: ATAC-seq MULtiplet Estimation Tool.')
 parser.add_argument("overlaps")
 parser.add_argument("overlapsummary")
 parser.add_argument("outputdirectory")
@@ -19,10 +19,18 @@ parser.add_argument('--q', dest='qthreshold', type=float, default=0.01,
 parser.add_argument('--qrep', dest='qrepthreshold', type=float, default=0.01,
                     help='FDR corrected probability threshold for inferring repetitive regions. (Default: 0.01)')
 
+parser.add_argument('--expectedoverlap', dest='expectedoverlap', type=int, default=2,
+                    help='Expected number of reads overlapping. (Default: 2)')
+
+parser.add_argument('--minoverlap', dest='minoverlap', type=int, default=1,
+                    help='The minimum length (in bp) of overlap to keep. (Default: 1)')
+
 args = parser.parse_args()
 qvalthresh = args.qthreshold
 qvalrepthresh = args.qrepthreshold
 outdir = args.outputdirectory
+expectedoverlap = args.expectedoverlap
+minoverlap = args.minoverlap-1
 
 def generateMatrix(data, cellids, unionoverlaps):
     #Map cellids to integers
@@ -95,7 +103,7 @@ def getDoublets(matrix, unionoverlaps, rcelliddict):
 
 
 
-def getFilteredOverlaps(data, simplerepeats):
+def getFilteredOverlaps(data, simplerepeats, expectedoverlap):
     rv = []
     sorted_repeats = po.getChrStartSorted(simplerepeats)
     for curoverlap in data:
@@ -118,7 +126,7 @@ def getFilteredOverlaps(data, simplerepeats):
                     newends.append(ends[i])
                 
         if len(newstarts) < len(starts):
-            if len(newstarts) > 2:
+            if len(newstarts) > expectedoverlap:
                 #Recalculate overlaps
 
                 #starts increment by 1
@@ -153,15 +161,18 @@ def getFilteredOverlaps(data, simplerepeats):
                         else:
                             break
 
-                    if not startoverlap and runningsum > 2:
+                    if not startoverlap and runningsum > expectedoverlap:
                         startoverlap = True
                         startoverlapposition = combinedcounts[i][0]
-                    elif startoverlap and runningsum <= 2:
+                    elif startoverlap and runningsum <= expectedoverlap:
                         #append overlap
                         rv.append([curchr, startoverlapposition, combinedcounts[i][0], curoverlap[3]])
                         startoverlap= False
 
                     i = j
+                if startoverlap:
+                    rv.append([curchr, startoverlapposition, combinedcounts[-1][0], curoverlap[3]])
+             
         else:
             rv.append(curoverlap[:4])
     rv = np.array(rv)
@@ -184,11 +195,11 @@ if args.rfilter:
 
 
 #Step 2: Filter repetitive elementss
-filtereddata = getFilteredOverlaps(data, simplerepeats)
+filtereddata = getFilteredOverlaps(data, simplerepeats, expectedoverlap)
 
-#filter overlaps that are only 1 bp
+#filter overlaps that are < a specified bp
 lengths = filtereddata[:,2]-filtereddata[:,1]+1
-filtereddata = filtereddata[lengths > 1,:]
+filtereddata = filtereddata[lengths > minoverlap,:]
 numfiltered = len(data)-len(filtereddata)
 
 print("Number of regions filtered: "+str(numfiltered)+" ("+str(100*numfiltered/len(data))+"%)")
@@ -197,7 +208,7 @@ print("Number of regions filtered: "+str(numfiltered)+" ("+str(100*numfiltered/l
 #Doublet Detection#
 ###################
 
-print("Detecting Doublets.")
+print("Detecting multiplets.")
 
 #Step 3: Generate Matrix
 unionoverlaps = po.getUnionPeaks([filtereddata])
@@ -233,8 +244,8 @@ for i in range(len(doublets_with_prob)):
         doublets_barcodes.append(summaryrow[3])
 
 #Output doublets
-pd.DataFrame(doublets_cellids).to_csv(outdir+"/DoubletCellIds_"+str(qvalthresh).split(".")[1]+".txt", header=None, index=None, sep="\t")
-pd.DataFrame(doublets_barcodes).to_csv(outdir+"/DoubletBarcodes_"+str(qvalthresh).split(".")[1]+".txt", header=None, index=None, sep="\t")
+pd.DataFrame(doublets_cellids).to_csv(outdir+"/MultipletCellIds_"+str(qvalthresh).split(".")[1]+".txt", header=None, index=None, sep="\t")
+pd.DataFrame(doublets_barcodes).to_csv(outdir+"/MultipletBarcodes_"+str(qvalthresh).split(".")[1]+".txt", header=None, index=None, sep="\t")
 
 pd.DataFrame(doublets_with_prob_barcode, columns=["cell_id", "barcode", "p-value", "q-value"]).to_csv(outdir+"/DoubletProbabilities.txt", index=None, sep="\t")
 
@@ -243,9 +254,9 @@ stats_numbercells = len(cellids)
 stats_numberunionregions = len(unionoverlaps)
 stats_numberdoublets = len(doublets_cellids)
 stats_percentdoublets = stats_numberdoublets*100/stats_numbercells
-doublet_stats = np.array([["Number of Cells", stats_numbercells], ["Number of Merged Regions", stats_numberunionregions], ["Number of Doublets", stats_numberdoublets], ["Doublet Percent", stats_percentdoublets]])
+doublet_stats = np.array([["Number of Cells", stats_numbercells], ["Number of Merged Regions", stats_numberunionregions], ["Number of Multiplets", stats_numberdoublets], ["Multiplet Percent", stats_percentdoublets]])
 
-pd.DataFrame(doublet_stats).to_csv(outdir+"/DoubletSummary.txt", index=None, header=None, sep="\t")
+pd.DataFrame(doublet_stats).to_csv(outdir+"/MultipletSummary.txt", index=None, header=None, sep="\t")
 
 
 print("Done.")

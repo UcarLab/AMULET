@@ -1,13 +1,11 @@
-# ATAC-DoubletDetector #
-A count based method for detecting doublets from single nucleus ATAC-seq (snATAC-seq) data.
+# AMULET: ATAC-seq MULtiplet Estimation Tool #
+A count based method for detecting multiplets from single nucleus ATAC-seq (snATAC-seq) data.
 
 **Preprint:** <https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1>
 
-Note: The jar files can be found in the releases: https://github.com/UcarLab/ATAC-DoubletDetector/releases
+Note: The jar files for running using BAM files can be found in the releases: https://github.com/UcarLab/ATAC-DoubletDetector/releases
 
 # System Requirements #
-Java SE 8 (build 231) or higher.
-
 Python 3 with the following libraries:
 - numpy
 - pandas
@@ -16,21 +14,20 @@ Python 3 with the following libraries:
 
 `pip3 install numpy pandas scipy statsmodels`
 
+If using BAM files:
+Java SE 8 (build 231) or higher.
+
 # Installation #
 If the system requirements are satisfied:
 
 1. Download the latest release.
 2. Unzip the files to your preferred output directory.
-3. Enable the shell script to be executed using `chmod` (e.g., `chmod +x ATACDoubletDetector.sh`)
+3. Enable the shell script to be executed using `chmod` (e.g., `chmod +x AMULET.sh`)
 
 The shell file can be run from there. Java is portable and the jar should not need to be recompiled for most platforms.
 
-# Running ATAC-DoubletDetector #
-Running ATAC-DoubletDetector consists of two parts: 1) Identifying all loci with >2 uniquely aligning reads for each cell, and 2) detecting doublets cells that have more loci with >2 reads than expected. The bash shell script combines both of these steps, but they can be run independently as well. The latter (doublet detection) may be useful for running doublet detection using q-values different from the default.
-
-For ease of use, executing the ATAC-DoubletDetector.jar will provide a graphical user interface (GUI) for selecting files and modifying optional parameters. Execute the jar file by double clicking it or using:
-
-`java -jar ATAC-DoubletDetector.jar`
+# Running AMULET #
+Running AMULET consists of two parts: 1) Identifying all loci with >2 uniquely aligning reads for each cell, and 2) detecting multiplets that have more loci with >2 reads than expected. The bash shell script combines both of these steps, but they can be run independently as well. The latter (multiplet detection) may be useful for running multiplet detection using q-values different from the default.
 
 ## Bash shell script ##
 
@@ -38,26 +35,41 @@ To run using the bash shell script, provide the following arguments:
 1. Path to the bam file (e.g., possorted.bam from CellRanger)
 2. Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger)
 3. Path to the list of chromosomes to use for the analysis (e.g., human_chromosomes_noxy.txt)
-4. Path to known repetitive elements. (e.g., blacklist_repeats_segdups_rmsk_hg19.bed depending on genome)
+4. Path to known repetitive elements. (e.g., restrictionlist_repeats_segdups_rmsk_hg19.bed depending on genome)
 5. Path to an existing output directory to write output files.
 6. Path of this script's directory.
 
-Example:
+Fragment file example:
 
-`ATACDoubletDetector.sh /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_chromosomes_noxy.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
+`AMULET.sh /path/to/fragments.tsv.gz /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
+
+BAM file example:
+
+`AMULET.sh /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
 
 Note: If you know the input bam file is coordinate sorted and you get an error message saying it's not, please use the `--forcesorted` option. There is a problem with the SAMReader library not recognizing this flag correctly in the header.
 
 Example:
 
-`ATACDoubletDetector.sh --forcesorted /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_chromosomes_noxy.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
+`AMULET.sh --forcesorted /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
 
 ### Advanced: Optional Arguments ###
-The above three arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:
+The above can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:
 
-`--forcesorted` Forces the input bam file to be treated as sorted.
+`--expectedoverlap` Expected number of reads overlapping. (Default: 2)
+
+`--maxinsertsize` The maximum insert size (in bp) between read pairs. (Default: 900)
+
+`--startbases` The amount of bases add to the start position. (BAM Default: 4, Frag Default: 0)
+
+`--endbases` The amount of bases to add to the end position. (BAM Default: -5, Frag Default: 0)
+
+
+BAM Input Only:
 
 `--bambc` The bam file attribute to use to extract the barcode from reads (Default: "CB")
+
+`--forcesorted` Forces the input bam file to be treated as sorted.
 
 `--bcidx` The column index (counting from 0) of the CSV file barcode to cell id map for the barcode. (Default: 0)
 
@@ -65,16 +77,46 @@ The above three arguments can be used for common CellRanger outputs. Use the fol
 
 `--iscellidx` The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)
 
+`--mapqthresh` Threshold for filtering low map quality reads (<= comparison). (Default: 30)
+
+
 Examples:
 
-`ATACDoubletDetector.sh --bambc CB --bcidx 1 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
+`AMULET.sh --bambc CB --bcidx 1 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
 
-`ATACDoubletDetector.sh --bcidx 1 --cellidx 2 --iscellidx 3 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
+`AMULET.sh --bcidx 1 --cellidx 2 --iscellidx 3 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/`
 
 
-## Running overlap counter and doublet detection independently ##
+## Running overlap counter and multiplet detection independently ##
 
-### Overlap Counter (Java) ###
+### Fragment File Overlap Counter (Detect overlaps from .tsv/.txt/.tsv.gz/.txt.gz using Python) ###
+
+To run the fragment overlap counter, use `python3 FragmentFileOverlapCounter.py` and provide the following input arguments:
+
+`FRAGMENTFILE` Path to the fragment file (e.g., fragments.tsv.gz from CellRanger)
+
+`BCMAP` Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger)
+
+`CHRLIST` Path to the list of chromosomes to use for the analysis (e.g., human_autosomes.txt)
+
+`OUTDIR` Path to an existing output directory to write output files.
+
+Example:
+
+`python3 FragmentFileOverlapCounter.py BAMFILE BCMAP CHRLIST OUTDIR`
+
+Optional Arguments:
+
+`--expectedoverlap`    Expected number of reads overlapping. (Default: 2)
+
+`--maxinsertsize` The maximum insert size (in bp) between read pairs. (Default: 900)
+
+`--startbases` The amount of bases add to the start position. (Default: 0)
+
+`--endbases` The amount of bases to add to the end position (can be negative). (Default: 0)
+
+
+### BAM Overlap Counter (Detect overlaps from BAM using Java) ###
 
 To run the overlap counter jar file, use `java -jar snATACOverlapCounter.jar` and provide the following input arguments:
 
@@ -90,17 +132,27 @@ Example:
 
 `java -jar snATACOverlapCounter.jar BAMFILE BCMAP CHRLIST OUTDIR`
 
-#### Advanced: Optional Arguments ####
+Optional Arguments:
 
-The above arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:
+`--expectedoverlap`    Expected number of reads overlapping. (Default: 2)
 
 `--bambc` The bam file attribute to use to extract the barcode from reads (Default: "CB")
+
+`--forcesorted` Forces the input bam file to be treated as sorted.
 
 `--bcidx` The column index (counting from 0) of the CSV file barcode to cell id map for the barcode. (Default: 0)
 
 `--cellidx` The column index (counting from 0) of the CSV file barcode to cell id map for the cell id. (Default: 8)
 
 `--iscellidx` The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)
+
+`--mapqthresh` Threshold for filtering low map quality reads (<= comparison). (Default: 30)
+
+`--maxinsertsize` The maximum insert size (in bp) between read pairs. (Default: 900)
+
+`--startbases` The amount of bases add to the start position. (Default: 4)
+
+`--endbases` The amount of bases to add to the end position (can be negative). (Default: -5)
 
 
 Examples:
@@ -109,11 +161,9 @@ Examples:
 
 `java -jar snATACOverlapCounter.jar --bambc CB --cellidx 1 BAMFILE BCMAP CHRLIST OUTDIR`
 
-### Doublet Detection (Python) ###
+### Multiplet Detection (Python) ###
 
-The doublet detection python file requires 3 input arguments. 
-
-**Note: We highly recommend using the optional argument for filtering known repetitive regions. **
+The multiplet detection python file requires 3 input arguments. 
 
 `OVERLAPS` Path to the Overlaps.txt output from overlap counter.
 
@@ -123,15 +173,15 @@ The doublet detection python file requires 3 input arguments.
 
 Optional Arguments:
 
-`--rfilter` A bed file of known repetitive regions to exclude from doublet detection.
+`--rfilter` A bed file of known problematic/repetitive regions to exclude from multiplet detection.
 
 `--q` The q-value threshold for detecting doublets.
 
-`--qrep` The q-value threshold for inferring repetitive regions to exclude from doublet detection.
+`--qrep` The q-value threshold for inferring repetitive regions to exclude from multiplet detection.
 
 Example:
 
-`python3 ATACDoubletDetector.py --rfilter /path/to/repeats.bed OVERLAPS OVERLAPSUMMARY OUTDIR`
+`python3 AMULET.py --rfilter /path/to/repeats.bed OVERLAPS OVERLAPSUMMARY OUTDIR`
 
 # Interpreting Results #
 
@@ -188,11 +238,11 @@ A file containing the following information:
 
 Shows the runtime (in seconds) for identifying all instances of read overlaps >2.
 
-## Doublet Detection ##
+## Multiplet Detection ##
 
 The doublet detection python script produces three output files: DoubletProbabilities, DoubletCellIds_xx.txt, and DoubletBarcodes_xx.txt (xx  corresponding to the q-value threshold used to call doublets).
 
-### DoubletProbabilities.txt ###
+### MultipletProbabilities.txt ###
 
 A tab delimited file with the following columns:
 
@@ -201,11 +251,11 @@ A tab delimited file with the following columns:
 3. **p-value** - The Poisson probability obtained from the cumulative distribution function.
 4. **q-value** - The FDR corrected p-value for multiple hypothesis testing.
 
-### DoubletCellIds_xx.txt ###
+### MultipletCellIds_xx.txt ###
 
-Files with the DoubletCelIds prefix correspond to doublet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.
+Files with the MultipletCellIds prefix correspond to doublet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.
 
-### DoubletBarcodes_xx.txt ###
+### MultipletBarcodes_xx.txt ###
 
-Files with the DoubletBarcodes prefix correspond to doublet cell barcodes with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.
+Files with the MultipletBarcodes prefix correspond to multiplet cell barcodes with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.
 
