@@ -3,7 +3,7 @@ A count based method for detecting multiplets from single nucleus ATAC-seq (snAT
 
 **Preprint:** <https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1>
 
-Note: The jar files for running using BAM files can be found in the releases: https://github.com/UcarLab/ATAC-DoubletDetector/releases
+Note: The jar files for running using BAM files can be found in the releases: https://github.com/UcarLab/AMULET/releases
 
 # System Requirements #
 Python 3 with the following libraries:
@@ -176,7 +176,7 @@ Optional Arguments:
 
 `--rfilter` A bed file of known problematic/repetitive regions to exclude from multiplet detection.
 
-`--q` The q-value threshold for detecting doublets.
+`--q` The q-value threshold for detecting multiplets.
 
 `--qrep` The q-value threshold for inferring repetitive regions to exclude from multiplet detection.
 
@@ -241,7 +241,7 @@ Shows the runtime (in seconds) for identifying all instances of read overlaps >2
 
 ## Multiplet Detection ##
 
-The doublet detection python script produces three output files: DoubletProbabilities, DoubletCellIds_xx.txt, and DoubletBarcodes_xx.txt (xx  corresponding to the q-value threshold used to call doublets).
+The multiplet detection python script produces three output files: MultipletProbabilities, MultipletCellIds_xx.txt, and MultipletBarcodes_xx.txt (xx  corresponding to the q-value threshold used to call multiplets).
 
 ### MultipletProbabilities.txt ###
 
@@ -254,7 +254,7 @@ A tab delimited file with the following columns:
 
 ### MultipletCellIds_xx.txt ###
 
-Files with the MultipletCellIds prefix correspond to doublet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.
+Files with the MultipletCellIds prefix correspond to multiplet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.
 
 ### MultipletBarcodes_xx.txt ###
 
