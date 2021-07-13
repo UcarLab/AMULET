@@ -11,7 +11,7 @@
 
 
 
-<title>ATAC-DoubletDetector</title>
+<title>AMULET</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,6 +19,15 @@
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
 <script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
 <link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
 <script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
@@ -38,11 +47,6 @@
     </style>
 
 <style type="text/css">code{white-space: pre;}</style>
-<style type="text/css">
-  pre:not([class]) {
-    background-color: white;
-  }
-</style>
 <script type="text/javascript">
 if (window.hljs) {
   hljs.configure({languages: []});
@@ -55,32 +59,6 @@ if (window.hljs) {
 
 
 
-<style type="text/css">
-h1 {
-  font-size: 34px;
-}
-h1.title {
-  font-size: 38px;
-}
-h2 {
-  font-size: 30px;
-}
-h3 {
-  font-size: 24px;
-}
-h4 {
-  font-size: 18px;
-}
-h5 {
-  font-size: 16px;
-}
-h6 {
-  font-size: 12px;
-}
-.table th:not([align]) {
-  text-align: left;
-}
-</style>
 
 
 
@@ -91,10 +69,6 @@ h6 {
   max-width: 940px;
   margin-left: auto;
   margin-right: auto;
-}
-code {
-  color: inherit;
-  background-color: rgba(0, 0, 0, 0.04);
 }
 img {
   max-width:100%;
@@ -111,40 +85,13 @@ button.code-folding-btn:focus {
 summary {
   display: list-item;
 }
+pre code {
+  padding: 0;
+}
 </style>
 
 
 <style type="text/css">
-/* padding for bootstrap navbar */
-body {
-  padding-top: 51px;
-  padding-bottom: 40px;
-}
-/* offset scroll position for anchor links (for fixed navbar)  */
-.section h1 {
-  padding-top: 56px;
-  margin-top: -56px;
-}
-.section h2 {
-  padding-top: 56px;
-  margin-top: -56px;
-}
-.section h3 {
-  padding-top: 56px;
-  margin-top: -56px;
-}
-.section h4 {
-  padding-top: 56px;
-  margin-top: -56px;
-}
-.section h5 {
-  padding-top: 56px;
-  margin-top: -56px;
-}
-.section h6 {
-  padding-top: 56px;
-  margin-top: -56px;
-}
 .dropdown-submenu {
   position: relative;
 }
@@ -172,7 +119,7 @@ body {
   margin-right: -10px;
 }
 .dropdown-submenu:hover>a:after {
-  border-left-color: #ffffff;
+  border-left-color: #adb5bd;
 }
 .dropdown-submenu.pull-left {
   float: none;
@@ -184,7 +131,7 @@ body {
 }
 </style>
 
-<script>
+<script type="text/javascript">
 // manage active state of menu based on current page
 $(document).ready(function () {
   // active menu anchor
@@ -195,10 +142,23 @@ $(document).ready(function () {
   var menuAnchor = $('a[href="' + href + '"]');
 
   // mark it active
-  menuAnchor.parent().addClass('active');
+  menuAnchor.tab('show');
 
   // if it's got a parent navbar menu mark it active as well
   menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
 });
 </script>
 
@@ -210,7 +170,6 @@ $(document).ready(function () {
   max-height: 500px;
   min-height: 44px;
   overflow-y: auto;
-  background: white;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
@@ -336,7 +295,7 @@ div.tocify {
 
 
 <!-- setup 3col/9col grid for toc_float and main content  -->
-<div class="row-fluid">
+<div class="row">
 <div class="col-xs-12 col-sm-4 col-md-3">
 <div id="TOC" class="tocify">
 </div>
@@ -355,7 +314,7 @@ div.tocify {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">ATAC-DoubletDetector</a>
+      <a class="navbar-brand" href="index.html">AMULET</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -370,7 +329,7 @@ div.tocify {
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="ATAC-DoubletDetector.html">Doublet Detection Vignette</a>
+      <a href="AMULET.html">Multiplet Detection Vignette</a>
     </li>
     <li>
       <a href="Doublet_Annotation_Pipeline.html">Doublet Annotation Vignette</a>
@@ -383,7 +342,7 @@ div.tocify {
   <a href="https://www.ucarlab.com/">Ucar Lab</a>
 </li>
 <li>
-  <a href="https://github.com/UcarLab/ATAC-DoubletDetector">
+  <a href="https://github.com/UcarLab/AMULET">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -393,7 +352,7 @@ div.tocify {
   </div><!--/.container -->
 </div><!--/.navbar -->
 
-<div class="fluid-row" id="header">
+<div id="header">
 
 
 
@@ -402,20 +361,20 @@ div.tocify {
 
 
 <p><link rel="stylesheet" href="styles.css" type="text/css"> <link rel="stylesheet" href="academicicons/css/academicons.min.css"/></p>
-<div id="atac-doubletdetector" class="section level1">
-<h1>ATAC-DoubletDetector</h1>
-<p>A count based method for detecting doublets from single nucleus ATAC-seq (snATAC-seq) data.</p>
-<p><strong>Preprint:</strong> <a href="https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1" class="uri">https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1</a> <br /> <strong>Source Code:</strong> <a href="https://github.com/UcarLab/ATAC-DoubletDetector" class="uri">https://github.com/UcarLab/ATAC-DoubletDetector</a></p>
-<p>Note: The jar files can be found in the releases: <a href="https://github.com/UcarLab/ATAC-DoubletDetector/releases" class="uri">https://github.com/UcarLab/ATAC-DoubletDetector/releases</a></p>
+<div id="amulet" class="section level1">
+<h1>AMULET</h1>
+<p><strong>AMULET: ATAC-seq MULtiplet Estimation Tool</strong> <br /> A count based method for detecting doublets from single nucleus ATAC-seq (snATAC-seq) data.</p>
+<p><strong>Preprint:</strong> <a href="https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1" class="uri">https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1</a> <br /> <strong>Source Code:</strong> <a href="https://github.com/UcarLab/AMULET" class="uri">https://github.com/UcarLab/AMULET</a></p>
+<p>Note: The jar files can be found in the releases: <a href="https://github.com/UcarLab/AMULET/releases" class="uri">https://github.com/UcarLab/AMULET/releases</a></p>
 </div>
 <div id="vignettes" class="section level1">
 <h1>Vignettes</h1>
 <div class="list">
 <div class="row">
 <div class="col-sm-4">
-<a class="thumbnail" title="Doublet Detection" href="ATAC-DoubletDetector.html">
-<img src="ATAC-DoubletDetector_files/figure-html/unnamed-chunk-17-1.png"/>
-<div class="caption">Doublet Detection</div>
+<a class="thumbnail" title="Multiplet Detection" href="AMULET.html">
+<img src="AMULET_files/figure-html/unnamed-chunk-17-1.png"/>
+<div class="caption">Multiplet Detection</div>
 </a>
 </div>
 <div class="col-sm-4">
@@ -429,9 +388,9 @@ div.tocify {
 </div>
 <div id="system-requirements" class="section level1">
 <h1>System Requirements</h1>
-<p>Java SE 8 (build 231) or higher.</p>
 <p>Python 3 with the following libraries: - numpy - pandas - scipy - statsmodels</p>
 <p><code>pip3 install numpy pandas scipy statsmodels</code></p>
+<p>If using BAM files: Java SE 8 (build 231) or higher.</p>
 </div>
 <div id="installation" class="section level1">
 <h1>Installation</h1>
@@ -439,40 +398,65 @@ div.tocify {
 <ol style="list-style-type: decimal">
 <li>Download the latest release.</li>
 <li>Unzip the files to your preferred output directory.</li>
-<li>Enable the shell script to be executed using <code>chmod</code> (e.g., <code>chmod +x ATACDoubletDetector.sh</code>)</li>
+<li>Enable the shell script to be executed using <code>chmod</code> (e.g., <code>chmod +x AMULET.sh</code>)</li>
 </ol>
 <p>The shell file can be run from there. Java is portable and the jar should not need to be recompiled for most platforms.</p>
 </div>
-<div id="running-atac-doubletdetector" class="section level1">
-<h1>Running ATAC-DoubletDetector</h1>
-<p>Running ATAC-DoubletDetector consists of two parts: <br /> 1) Identifying all loci with &gt;2 uniquely aligning reads for each cell.</p>
+<div id="running-amulet" class="section level1">
+<h1>Running AMULET</h1>
+<p>Running AMULET consists of two parts: <br /> 1) Identifying all loci with &gt;2 uniquely aligning reads for each cell.</p>
 <p><img src="screenshots/Figure_Overlap.png" width="418" /> <br /> 2) detecting doublets cells that have more loci with &gt;2 reads than expected. <br /> <img src="screenshots/Figure_Matrix.png" width="280" /> <br /> The bash shell script combines both of these steps, but they can be run independently as well. The latter (doublet detection) may be useful for running doublet detection using q-values different from the default.</p>
-<p>For ease of use, executing the ATAC-DoubletDetector.jar will provide a graphical user interface (GUI) for selecting files and modifying optional parameters. Execute the jar file by double clicking it or using:</p>
-<p><code>java -jar ATAC-DoubletDetector.jar</code></p>
 <div id="bash-shell-script" class="section level2">
 <h2>Bash shell script</h2>
 <p>To run using the bash shell script, provide the following arguments: 1. Path to the bam file (e.g., possorted.bam from CellRanger) 2. Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger) 3. Path to the list of chromosomes to use for the analysis (e.g., human_chromosomes_noxy.txt) 4. Path to known repetitive elements. (e.g., blacklist_repeats_segdups_rmsk_hg19.bed depending on genome) 5. Path to an existing output directory to write output files. 6. Path of this script’s directory.</p>
+<p>Fragment file example:</p>
+<p><code>AMULET.sh /path/to/fragments.tsv.gz /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/</code></p>
+<p>BAM file example:</p>
+<p><code>AMULET.sh /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/</code></p>
+<p>Note: If you know the input bam file is coordinate sorted and you get an error message saying it’s not, please use the <code>--forcesorted</code> option. There is a problem with the SAMReader library not recognizing this flag correctly in the header.</p>
 <p>Example:</p>
-<pre class="sh"><code>ATACDoubletDetector.sh /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_chromosomes_noxy.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
-</code></pre>
+<p><code>AMULET.sh --forcesorted /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/</code></p>
 <div id="advanced-optional-arguments" class="section level3">
 <h3>Advanced: Optional Arguments</h3>
-<p>The above three arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:</p>
+<p>The above can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:</p>
+<p><code>--expectedoverlap</code> Expected number of reads overlapping. (Default: 2)</p>
+<p><code>--maxinsertsize</code> The maximum insert size (in bp) between read pairs. (Default: 900)</p>
+<p><code>--startbases</code> The amount of bases add to the start position. (BAM Default: 4, Frag Default: 0)</p>
+<p><code>--endbases</code> The amount of bases to add to the end position. (BAM Default: -5, Frag Default: 0)</p>
+<p>BAM Input Only:</p>
 <p><code>--bambc</code> The bam file attribute to use to extract the barcode from reads (Default: “CB”)</p>
+<p><code>--forcesorted</code> Forces the input bam file to be treated as sorted.</p>
 <p><code>--bcidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the barcode. (Default: 0)</p>
-<p><code>--cellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the cell id. (Default: 8)</p>
+<p><code>--cellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the cell id. (Default: 0)</p>
 <p><code>--iscellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)</p>
+<p><code>--mapqthresh</code> Threshold for filtering low map quality reads (&lt;= comparison). (Default: 30)</p>
+<p><code>--maxinsertsize</code> The maximum insert size (in bp) between read pairs. (Default: 900)</p>
 <p>Examples:</p>
-<pre class="sh"><code>ATACDoubletDetector.sh --bambc CB --bcidx 1 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
+<pre class="sh"><code>AMULET.sh --bambc CB --bcidx 1 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
 </code></pre>
-<pre class="sh"><code>ATACDoubletDetector.sh --bcidx 1 --cellidx 2 --iscellidx 3 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
+<pre class="sh"><code>AMULET.sh --bcidx 1 --cellidx 2 --iscellidx 3 /path/to/possorted.bam /path/to/singlecell.csv /path/to/human_autosomes.txt /path/to/repeatfilter.bed /path/to/output/ /path/to/shellscript/
 </code></pre>
 </div>
 </div>
 <div id="running-overlap-counter-and-doublet-detection-independently" class="section level2">
 <h2>Running overlap counter and doublet detection independently</h2>
-<div id="overlap-counter-java" class="section level3">
-<h3>Overlap Counter (Java)</h3>
+<div id="fragment-file-overlap-counter-detect-overlaps-from-.tsv.txt.tsv.gz.txt.gz-using-python" class="section level3">
+<h3>Fragment File Overlap Counter (Detect overlaps from .tsv/.txt/.tsv.gz/.txt.gz using Python)</h3>
+<p>To run the fragment overlap counter, use <code>python3 FragmentFileOverlapCounter.py</code> and provide the following input arguments:</p>
+<p><code>FRAGMENTFILE</code> Path to the fragment file (e.g., fragments.tsv.gz from CellRanger)</p>
+<p><code>BCMAP</code> Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger)</p>
+<p><code>CHRLIST</code> Path to the list of chromosomes to use for the analysis (e.g., human_autosomes.txt)</p>
+<p><code>OUTDIR</code> Path to an existing output directory to write output files.</p>
+<p>Example:</p>
+<p><code>python3 FragmentFileOverlapCounter.py BAMFILE BCMAP CHRLIST OUTDIR</code></p>
+<p>Optional Arguments:</p>
+<p><code>--expectedoverlap</code> Expected number of reads overlapping. (Default: 2)</p>
+<p><code>--maxinsertsize</code> The maximum insert size (in bp) between read pairs. (Default: 900)</p>
+<p><code>--startbases</code> The amount of bases add to the start position. (Default: 0)</p>
+<p><code>--endbases</code> The amount of bases to add to the end position (can be negative). (Default: 0)</p>
+</div>
+<div id="bam-overlap-counter-detect-overlaps-from-bam-using-java" class="section level3">
+<h3>BAM Overlap Counter (Detect overlaps from BAM using Java)</h3>
 <p>To run the overlap counter jar file, use <code>java -jar snATACOverlapCounter.jar</code> and provide the following input arguments:</p>
 <p><code>BAMFILE</code> Path to the bam file (e.g., possorted.bam from CellRanger)</p>
 <p><code>BCMAP</code> Path to a barcode to cell_id map in CSV format (e.g., singlecell.csv from CellRanger)</p>
@@ -480,22 +464,24 @@ div.tocify {
 <p><code>OUTDIR</code> Path to an existing output directory to write output files.</p>
 <p>Example:</p>
 <p><code>java -jar snATACOverlapCounter.jar BAMFILE BCMAP CHRLIST OUTDIR</code></p>
-<div id="advanced-optional-arguments-1" class="section level4">
-<h4>Advanced: Optional Arguments</h4>
-<p>The above arguments can be used for common CellRanger outputs. Use the following options to adjust for differences in CellRanger outputs or for different inputs in general:</p>
+<p>Optional Arguments:</p>
+<p><code>--expectedoverlap</code> Expected number of reads overlapping. (Default: 2)</p>
 <p><code>--bambc</code> The bam file attribute to use to extract the barcode from reads (Default: “CB”)</p>
+<p><code>--forcesorted</code> Forces the input bam file to be treated as sorted.</p>
 <p><code>--bcidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the barcode. (Default: 0)</p>
 <p><code>--cellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for the cell id. (Default: 8)</p>
 <p><code>--iscellidx</code> The column index (counting from 0) of the CSV file barcode to cell id map for determining if the barcode corresponds to a cell. (Default: 9)</p>
+<p><code>--mapqthresh</code> Threshold for filtering low map quality reads (&lt;= comparison). (Default: 30)</p>
+<p><code>--maxinsertsize</code> The maximum insert size (in bp) between read pairs. (Default: 900)</p>
+<p><code>--startbases</code> The amount of bases add to the start position. (Default: 4)</p>
+<p><code>--endbases</code> The amount of bases to add to the end position (can be negative). (Default: -5)</p>
 <p>Examples:</p>
 <p><code>java -jar snATACOverlapCounter.jar --bambc CB BAMFILE BCMAP CHRLIST OUTDIR</code></p>
 <p><code>java -jar snATACOverlapCounter.jar --bambc CB --cellidx 1 BAMFILE BCMAP CHRLIST OUTDIR</code></p>
 </div>
-</div>
-<div id="doublet-detection-python" class="section level3">
-<h3>Doublet Detection (Python)</h3>
+<div id="multiplet-detection-python" class="section level3">
+<h3>Multiplet Detection (Python)</h3>
 <p>The doublet detection python file requires 3 input arguments.</p>
-<p><strong>Note: We highly recommend using the optional argument for filtering known repetitive regions. </strong></p>
 <p><code>OVERLAPS</code> Path to the Overlaps.txt output from overlap counter.</p>
 <p><code>OVERLAPSUMMARY</code> Path to the OverlapSummary.txt output from overlap counter.</p>
 <p><code>OUTDIR</code> Path to an existing output directory to write output files.</p>
@@ -504,7 +490,7 @@ div.tocify {
 <p><code>--q</code> The q-value threshold for detecting doublets.</p>
 <p><code>--qrep</code> The q-value threshold for inferring repetitive regions to exclude from doublet detection.</p>
 <p>Example:</p>
-<p><code>python3 ATACDoubletDetector.py --rfilter /path/to/repeats.bed OVERLAPS OVERLAPSUMMARY OUTDIR</code></p>
+<p><code>python3 AMULET.py --rfilter /path/to/repeats.bed OVERLAPS OVERLAPSUMMARY OUTDIR</code></p>
 </div>
 </div>
 </div>
@@ -568,11 +554,11 @@ div.tocify {
 <p>Shows the runtime (in seconds) for identifying all instances of read overlaps &gt;2.</p>
 </div>
 </div>
-<div id="doublet-detection" class="section level2">
-<h2>Doublet Detection</h2>
-<p>The doublet detection python script produces three output files: DoubletProbabilities, DoubletCellIds_xx.txt, and DoubletBarcodes_xx.txt (xx corresponding to the q-value threshold used to call doublets).</p>
-<div id="doubletprobabilities.txt" class="section level3">
-<h3>DoubletProbabilities.txt</h3>
+<div id="multiplet-detection" class="section level2">
+<h2>Multiplet Detection</h2>
+<p>The multiplet detection python script produces three output files: MultipletProbabilities, MultipletCellIds_xx.txt, and MultipletBarcodes_xx.txt (xx corresponding to the q-value threshold used to call multiplets).</p>
+<div id="multipletprobabilities.txt" class="section level3">
+<h3>MultipletProbabilities.txt</h3>
 <p>A tab delimited file with the following columns:</p>
 <ol style="list-style-type: decimal">
 <li><strong>cell_id</strong> - The cell id (e.g., _cell_0, _cell_1, etc. from CellRanger)</li>
@@ -581,13 +567,13 @@ div.tocify {
 <li><strong>q-value</strong> - The FDR corrected p-value for multiple hypothesis testing.</li>
 </ol>
 </div>
-<div id="doubletcellids_xx.txt" class="section level3">
-<h3>DoubletCellIds_xx.txt</h3>
-<p>Files with the DoubletCelIds prefix correspond to doublet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.</p>
+<div id="multipletcellids_xx.txt" class="section level3">
+<h3>MultipletCellIds_xx.txt</h3>
+<p>Files with the MultipletCellIds prefix correspond to multiplet cell ids with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.</p>
 </div>
-<div id="doubletbarcodes_xx.txt" class="section level3">
-<h3>DoubletBarcodes_xx.txt</h3>
-<p>Files with the DoubletBarcodes prefix correspond to doublet cell barcodes with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.</p>
+<div id="multipletbarcodes_xx.txt" class="section level3">
+<h3>MultipletBarcodes_xx.txt</h3>
+<p>Files with the MultipletBarcodes prefix correspond to multiplet cell barcodes with a q-value threshold specified by xx (i.e., 0.xx). For example 01 implies a q-value threshold of 0.01.</p>
 </div>
 </div>
 </div>
@@ -621,7 +607,7 @@ $(document).ready(function () {
 
 $(document).ready(function () {
   $('.tabset-dropdown > .nav-tabs > li').click(function () {
-    $(this).parent().toggleClass('nav-tabs-open')
+    $(this).parent().toggleClass('nav-tabs-open');
   });
 });
 </script>
@@ -630,6 +616,9 @@ $(document).ready(function () {
 
 <script>
 $(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
 
     // move toc-ignore selectors from section div to header
     $('div.section.toc-ignore')
