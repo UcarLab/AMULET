@@ -5,6 +5,11 @@ A count based method for detecting multiplets from single nucleus ATAC-seq (snAT
 
 Note: The jar files for running using BAM files can be found in the releases: https://github.com/UcarLab/AMULET/releases
 
+# License #
+AMULET is provided under the GPLv3 license (see LICENSE). 
+
+Note: Some AMULET code has been (or can be) released under the MIT license (i.e., any code that is not associated with R).
+
 # System Requirements #
 Python 3 with the following libraries:
 - numpy
