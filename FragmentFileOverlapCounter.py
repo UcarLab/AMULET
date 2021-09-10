@@ -261,7 +261,12 @@ def findOverlaps(fragmentfile, singlecellfile, expectedoverlap, chrlist, path, m
         stats_readcount += 1
         
         decodedline = linedecoder(curline)
+
+        if decodedline.strip().startswith("#"):
+            continue
+
         split = decodedline.split("\t")
+
         curchr = split[0]
         curstart = int(split[1])+startbases
         curend = int(split[2])+endbases
