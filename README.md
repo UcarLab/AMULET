@@ -1,7 +1,7 @@
 # AMULET: ATAC-seq MULtiplet Estimation Tool #
 A count based method for detecting multiplets from single nucleus ATAC-seq (snATAC-seq) data.
 
-**Preprint:** <https://www.biorxiv.org/content/10.1101/2021.01.04.425250v1>
+**Publication:** <https://doi.org/10.1186/s13059-021-02469-x>
 
 Note: The jar files for running using BAM files can be found in the releases: https://github.com/UcarLab/AMULET/releases
 
