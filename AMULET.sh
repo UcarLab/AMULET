@@ -69,7 +69,7 @@ if [ "${BAMFILE: -4}" == ".bam" ]; then
 	#Another issue is duplicate marking. Better duplicate marking needs to account for the cell barcodes
 	#Otherwise more reads are marked as duplicates when they are actually unique to that cell
     java -jar ${SCRIPTPATH}/snATACOverlapCounter.jar ${FORCESORTED}--expectedoverlap ${EXPECTEDOVERLAP} --bambc ${BAMBC} --bcidx ${BCIDX} --cellidx ${CELLIDX} --iscellidx ${ISCELLIDX} --mapqthresh ${MAPQTHRESH} --maxinsertsize ${MAXINSERT} --startbases ${STARTBASES} --endbases ${ENDBASES} ${BAMFILE} ${BCMAP} ${CHRLIST} ${OUTDIR}
-    python3 ${SCRIPTPATH}/AMULET.py --rfilter ${REPFILTER} ${OUTDIR}/Overlaps.txt ${OUTDIR}/OverlapSummary.txt ${OUTDIR}
+    python3 ${SCRIPTPATH}/AMULET.py --expectedoverlap ${EXPECTEDOVERLAP} --rfilter ${REPFILTER} ${OUTDIR}/Overlaps.txt ${OUTDIR}/OverlapSummary.txt ${OUTDIR}
 
 elif [ "${BAMFILE: -4}" == ".tsv" ] || [ "${BAMFILE: -4}" == ".txt" ] ||[ "${BAMFILE: -7}" == ".tsv.gz" ] || [ "${BAMFILE: -7}" == ".txt.gz" ]; then
     if [ ${STARTBASES} == "DEFAULT" ]; then
@@ -80,7 +80,7 @@ elif [ "${BAMFILE: -4}" == ".tsv" ] || [ "${BAMFILE: -4}" == ".txt" ] ||[ "${BAM
     fi
 
     python3 ${SCRIPTPATH}/FragmentFileOverlapCounter.py --maxinsertsize ${MAXINSERT} --expectedoverlap ${EXPECTEDOVERLAP} --startbases ${STARTBASES} --endbases ${ENDBASES} ${BAMFILE} ${BCMAP} ${CHRLIST} ${OUTDIR}
-    python3 ${SCRIPTPATH}/AMULET.py --rfilter ${REPFILTER} ${OUTDIR}/Overlaps.txt ${OUTDIR}/OverlapSummary.txt ${OUTDIR}
+    python3 ${SCRIPTPATH}/AMULET.py --expectedoverlap ${EXPECTEDOVERLAP} --rfilter ${REPFILTER} ${OUTDIR}/Overlaps.txt ${OUTDIR}/OverlapSummary.txt ${OUTDIR}
 else
 	echo "Unsupported file formatted.";
 fi
