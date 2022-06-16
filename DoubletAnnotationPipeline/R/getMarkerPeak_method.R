@@ -2,31 +2,22 @@
 # Function for getting the marker peaks from the Seurat
 # object, based on the current ident
 #####################################################
-getMarkerPeaks <- function(obj, doublets, n_peaks = 100, min_cells = 200){
+getMarkerPeaks <- function(obj, doublets, n_peaks = 100, min_cells = 200, assay = "peaks"){
 
-  n_clusters = length(unique(as.vector(Idents(obj))))
+  n_clusters = length(unique(as.vector(Seurat::Idents(obj))))
   
-  cells <- Cells(obj)
+  cells <- Seurat::Cells(obj)
   
   # remove the doublet cells for better marker peaks
   obj <- subset(obj, cells = cells[!cells %in% doublets])
   
-  obj@assays$ATAC@data@x <- obj@assays$ATAC@counts@x
-  
-  # default preporcessing o Signac applied
-  obj <- RunTFIDF(obj, verbose = F)
-  obj <- FindTopFeatures(obj, min.cutoff = NULL, verbose = F)
-  obj <- RunSVD(
-    object = obj,
-    reduction.key = 'SVD_',
-    reduction.name = 'svd',
-    seed.use = 1,
-    verbose = F
-  )
+  # default pr-eporcessing of Signac applied
+  obj <- Signac::RunTFIDF(obj, assay = assay, verbose = F)
   
   # get the marker peaks between all clusters
-  da_peaks <- FindAllMarkers(
+  da_peaks <- Seurat::FindAllMarkers(
     object = obj,
+    assay = assay,
     slot = "data",
     min.pct = 0.1,
     only.pos = TRUE,
@@ -37,7 +28,7 @@ getMarkerPeaks <- function(obj, doublets, n_peaks = 100, min_cells = 200){
   
   # only keep the significant peaks
   metadata = lapply(unique(da_peaks$cluster), function(x){
-    return(data.frame(da_peaks[da_peaks$p_val_adj < 0.05 & da_peaks$cluster == x,]))
+    return(data.frame(da_peaks[da_peaks$p_val_adj < 0.1 & da_peaks$cluster == x,]))
   })
   
   names(metadata) <- paste0("Cluster_", unique(da_peaks$cluster))
@@ -60,7 +51,7 @@ getMarkerPeaks <- function(obj, doublets, n_peaks = 100, min_cells = 200){
   }
   
   # sort the peaks based on the fold changes and signifigance, choose ones with high FC first
-  meta_peaks = meta_peaks[order(meta_peaks$avg_logFC, -meta_peaks$p_val_adj, decreasing = T),]
+  meta_peaks = meta_peaks[order(meta_peaks$avg_log2FC, -meta_peaks$p_val_adj, decreasing = T),]
   
   marker_peaks_set = data.frame(matrix(ncol=2,nrow=0, dimnames=list(NULL, c("gene", "cluster"))))
   

@@ -19,7 +19,7 @@ getReadCountDistributions <- function(marker_peaks, read_counts){
     density_data = vector()
     
     for(j in 1:nrow(t_read_counts))
-      density_data = c(density_data, rep(t_read_counts$ids[j], t_read_counts[j,row.names(probs)[i]]))
+      density_data = c(density_data, rep(x = t_read_counts$ids[j], times = t_read_counts[j,row.names(probs)[i]]))
     
     for(j in 1:ncol(probs)){
       if(j==1)
@@ -56,14 +56,13 @@ plotReadCountDistributions <- function(probs, folder_path){
 # cells in the provided in te Seurat object with the
 # provided marker peaks
 #####################################################
-getCellValues <- function(obj, cells, marker_peaks_set, doublets, k = 15){
+getCellValues <- function(obj, cells, marker_peaks_set, doublets, assay = "ATAC",  k = 15){
   
-  obj@assays$ATAC@data@x <- obj@assays$ATAC@counts@x
-  
-  obj <- RunTFIDF(obj, verbose = F)
-  obj <- FindTopFeatures(obj, min.cutoff = NULL, verbose = F)
-  obj <- RunSVD(
+  obj <- Signac::RunTFIDF(obj, assay = assay, verbose = F)
+  obj <- Signac::FindTopFeatures(obj, assay = assay, min.cutoff = NULL, verbose = F)
+  obj <- Signac::RunSVD(
     object = obj,
+    assay = assay,
     reduction.key = 'SVD_',
     reduction.name = 'svd',
     seed.use = 1,
@@ -71,15 +70,15 @@ getCellValues <- function(obj, cells, marker_peaks_set, doublets, k = 15){
   )
   
   # get the neighbor graph of the cells for aggregation
-  obj <- FindNeighbors(obj, reduction = "svd", dims = 1:50, k.param = k+1, verbose = F)
+  obj <- Seurat::FindNeighbors(obj, reduction = "svd", dims = 1:50, k.param = k+1, verbose = F, assay = assay)
   
   cell_annotations <- lapply(cells, function(cell){
     
     # extract the k neighbors of the current cell
-    neighbors <- names(obj@graphs$ATAC_nn[cell, obj@graphs$ATAC_nn[cell,] > 0])
+    neighbors <- names(obj@graphs[[paste0(assay, "_nn")]][cell, obj@graphs[[paste0(assay, "_nn")]][cell,] > 0])
     
     # extract the reads for the cell and its k-nearest neighbors
-    reads <- Matrix::as.matrix(subset(obj, cells = neighbors, features = marker_peaks_set$peaks)@assays[["ATAC"]]@counts)
+    reads <- Matrix::as.matrix(subset(obj, cells = neighbors, features = marker_peaks_set$peaks)@assays[[assay]]@counts)
     
     no_clusters <- length(unique(marker_peaks_set$cluster))
     
@@ -102,8 +101,7 @@ getCellValues <- function(obj, cells, marker_peaks_set, doublets, k = 15){
     }
     
     # calculate the read count distribution of the cell on the marker peaks
-    doublet_probs <- reads %>%
-      getReadCountDistributions(marker_peaks_set,.) %>% data.frame()
+    doublet_probs <-  as.data.frame(getReadCountDistributions(marker_peaks = marker_peaks_set, read_counts = reads))
     
     results[cell, colnames(doublet_probs)] <- doublet_probs
     
@@ -120,7 +118,7 @@ getCellValues <- function(obj, cells, marker_peaks_set, doublets, k = 15){
   cell_annotations <- mutate(cell_annotations, doublet = ifelse(cell_id %in% doublets, "doublet", "singlet"))
   row.names(cell_annotations) <- cell_annotations$cell_id
   
-  cell_annotations[, "ident"] <- Idents(obj)[rownames(cell_annotations)]
+  cell_annotations[, "ident"] <- Seurat::Idents(obj)[rownames(cell_annotations)]
   
   return(cell_annotations)
 }
