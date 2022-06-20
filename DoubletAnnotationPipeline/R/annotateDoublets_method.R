@@ -4,10 +4,10 @@ source("R/utilities.R")
 # get the readcount distribution profile for
 # the singlet cells of every cluster
 ############################################
-annotateDoublets <- function(obj, marker_peaks, doublets, k = 15){
+annotateDoublets <- function(obj, marker_peaks, doublets, k = 15, assay = "peaks"){
 
   # get the read count distributions on the cluster specific marker peaks for all of the cells
-  cell.values <- getCellValues(obj, cells = Cells(obj), marker_peaks_set = marker_peaks, doublets = doublets, k = k)
+  cell.values <- getCellValues(obj, cells = Cells(obj), marker_peaks_set = marker_peaks, doublets = doublets, k = k, assay = assay)
   
   #get the profile for the singlet cells of each cluster
   singlet.profile <- getProfiles(cell.values)

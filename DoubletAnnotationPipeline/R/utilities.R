@@ -18,8 +18,35 @@ getReadCountDistributions <- function(marker_peaks, read_counts){
   for (i in 1:nrow(probs)) {
     density_data = vector()
     
-    for(j in 1:nrow(t_read_counts))
-      density_data = c(density_data, rep(x = t_read_counts$ids[j], times = t_read_counts[j,row.names(probs)[i]]))
+    for(j in 1:nrow(t_read_counts)){
+      
+      if( is.na(round(as.numeric(t_read_counts[j,row.names(probs)[i]]))) ){
+        
+        print(paste0("NA/NaN times argument given at peak ", t_read_counts[j,"peaks"], " and cell ", row.names(probs)[i]))
+        stop()
+        
+      }else if(round(as.numeric(t_read_counts[j,row.names(probs)[i]]) < 0)){
+        
+        print(paste0("Negative read count detected at peak ", t_read_counts[j,"peaks"], " and cell ", row.names(probs)[i]))
+        stop()
+        
+      } else if(length(t_read_counts[j,row.names(probs)[i]]) != 1){
+        
+        print(paste0("A vector given in the times argument at peak ", t_read_counts[j,"peaks"], " and cell ", row.names(probs)[i]))
+        stop()
+        
+      } else if(round(as.numeric(t_read_counts[j,row.names(probs)[i]])) > -1){
+        
+        density_data = c(density_data, rep(x = t_read_counts$ids[j], times = round(as.numeric(t_read_counts[j,row.names(probs)[i]]))))
+        
+      } else {
+        
+        print(paste0("Unexpected rep/times error at ", t_read_counts[j,"peaks"], " and cell ", row.names(probs)[i]))
+        stop()
+        
+      } 
+    }
+      
     
     for(j in 1:ncol(probs)){
       if(j==1)
@@ -56,7 +83,7 @@ plotReadCountDistributions <- function(probs, folder_path){
 # cells in the provided in te Seurat object with the
 # provided marker peaks
 #####################################################
-getCellValues <- function(obj, cells, marker_peaks_set, doublets, assay = "ATAC",  k = 15){
+getCellValues <- function(obj, cells, marker_peaks_set, doublets, assay = "peaks",  k = 15){
   
   obj <- Signac::RunTFIDF(obj, assay = assay, verbose = F)
   obj <- Signac::FindTopFeatures(obj, assay = assay, min.cutoff = NULL, verbose = F)
